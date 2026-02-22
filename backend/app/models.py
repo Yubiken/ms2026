@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Boolean, Column, Integer, String, DateTime, ForeignKey
 from .database import Base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -14,11 +14,12 @@ class Match(Base):
     __tablename__ = "matches"
 
     id = Column(Integer, primary_key=True, index=True)
-    start_time = Column(DateTime, nullable=False)
+
     home_team = Column(String, nullable=False)
     away_team = Column(String, nullable=False)
 
-    match_date = Column(DateTime, nullable=False)
+    match_date = Column(DateTime(timezone=True), nullable=False)
+    start_time = Column(DateTime(timezone=True), nullable=False)
 
     # relacja do predictions
     predictions = relationship("Prediction", back_populates="match")
@@ -30,9 +31,12 @@ class Prediction(Base):
 
     user_id = Column(Integer, ForeignKey("users.id"))
     match_id = Column(Integer, ForeignKey("matches.id"))
-
-    home_score = Column(Integer)
-    away_score = Column(Integer)
+        
+    home_score = Column(Integer, nullable=True)
+    away_score = Column(Integer, nullable=True)
+    is_finished = Column(Boolean, default=False)
 
     user = relationship("User")
     match = relationship("Match", back_populates="predictions")
+
+    points = Column(Integer, default=0)
