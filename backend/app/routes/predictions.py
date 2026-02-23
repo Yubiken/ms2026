@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
-
+from sqlalchemy import func
 from ..database import get_db
 from ..models import Prediction, Match, User
 from .users import get_current_user
@@ -306,3 +306,37 @@ def finish_match(
         for p in predictions
     ]
 
+# ==============================
+# LEADERBOARD
+# ==============================
+
+@router.get(
+    "/leaderboard",
+    summary="Tabela wyników",
+    description="Zwraca ranking użytkowników według liczby zdobytych punktów."
+)
+def leaderboard(db: Session = Depends(get_db)):
+
+    results = (
+        db.query(
+            User.id,
+            User.email,
+            func.coalesce(func.sum(Prediction.points), 0).label("total_points")
+        )
+        .outerjoin(Prediction, Prediction.user_id == User.id)
+        .group_by(User.id)
+        .order_by(func.sum(Prediction.points).desc())
+        .all()
+    )
+
+    logger.info("Leaderboard requested")
+
+    return [
+        {
+            "position": index + 1,
+            "user_id": r.id,
+            "email": r.email,
+            "points": int(r.total_points)
+        }
+        for index, r in enumerate(results)
+    ]
