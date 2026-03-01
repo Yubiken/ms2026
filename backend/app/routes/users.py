@@ -1,11 +1,9 @@
-# users.py
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from datetime import datetime, timedelta
 
 from ..database import get_db
@@ -17,7 +15,7 @@ router = APIRouter(tags=["Users"])
 # SECURITY CONFIG
 # ===============================
 
-SECRET_KEY = "supersecretkey"  # w produkcji -> .env
+SECRET_KEY = "supersecretkey"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -25,29 +23,29 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 security = HTTPBearer()
 
 # ===============================
-# Pydantic Schemas
+# SCHEMAS
 # ===============================
 
 class UserCreate(BaseModel):
-    email: EmailStr
+    username: str
     password: str
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    username: str
     password: str
 
 
 class UserResponse(BaseModel):
     id: int
-    email: EmailStr
+    username: str
 
     class Config:
         from_attributes = True
 
 
 # ===============================
-# Password utils
+# PASSWORD UTILS
 # ===============================
 
 def hash_password(password: str) -> str:
@@ -59,7 +57,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 # ===============================
-# JWT utils
+# JWT
 # ===============================
 
 def create_access_token(data: dict):
@@ -73,24 +71,19 @@ def create_access_token(data: dict):
 # REGISTER
 # ===============================
 
-@router.post(
-    "/register",
-    response_model=UserResponse,
-    summary="Rejestracja nowego użytkownika",
-    description="Tworzy nowego użytkownika w systemie. Email musi być unikalny."
-)
-
+@router.post("/register", response_model=UserResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):
 
-    existing_user = db.query(User).filter(User.email == user.email).first()
+    existing_user = db.query(User).filter(User.username == user.username).first()
+
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already exists"
+            detail="Username already exists"
         )
 
     new_user = User(
-        email=user.email,
+        username=user.username,
         password_hash=hash_password(user.password)
     )
 
@@ -105,15 +98,10 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 # LOGIN
 # ===============================
 
-@router.post(
-    "/login",
-    summary="Logowanie użytkownika",
-    description="Weryfikuje dane logowania i zwraca token JWT."
-)
-
+@router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
 
-    db_user = db.query(User).filter(User.email == user.email).first()
+    db_user = db.query(User).filter(User.username == user.username).first()
 
     if not db_user or not verify_password(user.password, db_user.password_hash):
         raise HTTPException(
@@ -121,7 +109,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
             detail="Invalid credentials"
         )
 
-    access_token = create_access_token({"sub": db_user.email})
+    access_token = create_access_token({"sub": db_user.username})
 
     return {"access_token": access_token}
 
@@ -139,9 +127,9 @@ def get_current_user(
 
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
+        username = payload.get("sub")
 
-        if email is None:
+        if username is None:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
@@ -153,7 +141,7 @@ def get_current_user(
             detail="Invalid token"
         )
 
-    user = db.query(User).filter(User.email == email).first()
+    user = db.query(User).filter(User.username == username).first()
 
     if user is None:
         raise HTTPException(
@@ -164,12 +152,6 @@ def get_current_user(
     return user
 
 
-@router.get(
-    "/me",
-    response_model=UserResponse,
-    summary="Pobierz dane zalogowanego użytkownika",
-    description="Zwraca dane użytkownika na podstawie tokena JWT."
-)
-
+@router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user

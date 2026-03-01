@@ -12,14 +12,11 @@ router = APIRouter(tags=["Matches"])
 
 # schema request
 class MatchCreate(BaseModel):
-
-    home_team: str = Field(..., description="Drużyna gospodarzy")
-    away_team: str = Field(..., description="Drużyna gości")
-
-    start_time: datetime = Field(
-        ...,
-        description="Data i godzina rozpoczęcia meczu w UTC, np: 2026-06-12T18:00:00Z"
-    )
+    home_team: str
+    away_team: str
+    start_time: datetime
+    stage: str
+    group_name: str | None = None
 
 
 @router.post(
@@ -38,8 +35,9 @@ def create_match(
     new_match = Match(
         home_team=match.home_team,
         away_team=match.away_team,
-        match_date=match.start_time.date(),
-        start_time=match.start_time
+        start_time=match.start_time,
+        stage=match.stage,
+        group_name=match.group_name
     )
 
     db.add(new_match)

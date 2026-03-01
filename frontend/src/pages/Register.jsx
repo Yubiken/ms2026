@@ -1,31 +1,26 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
+import toast from "react-hot-toast"
 
 export default function Register() {
 
-  const navigate = useNavigate()
-
-  const [email, setEmail] = useState("")
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-
-  const [error, setError] = useState("")
-  const [success, setSuccess] = useState("")
   const [loading, setLoading] = useState(false)
 
+  const navigate = useNavigate()
+
   const handleRegister = async (e) => {
+
     e.preventDefault()
 
-    setError("")
-    setSuccess("")
-
-    if (password !== confirmPassword) {
-      setError("Hasła nie są takie same")
+    if (!username || !password) {
+      toast.error("Fill all fields")
       return
     }
 
-    if (password.length < 6) {
-      setError("Hasło musi mieć minimum 6 znaków")
+    if (password.length < 4) {
+      toast.error("Password must be at least 4 characters")
       return
     }
 
@@ -36,125 +31,82 @@ export default function Register() {
       const response = await fetch("http://127.0.0.1:8000/register", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          email,
-          password
-        })
+          username,
+          password,
+        }),
       })
 
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.detail || "Błąd rejestracji")
+        toast.error(data.detail || "Registration failed")
+        setLoading(false)
+        return
       }
 
-      setSuccess("Konto utworzone! Logowanie...")
+      toast.success("Account created 🚀")
 
-      // automatyczne logowanie po rejestracji
-      const loginResponse = await fetch("http://127.0.0.1:8000/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          email,
-          password
-        })
-      })
+      navigate("/login")
 
-      const loginData = await loginResponse.json()
-
-      localStorage.setItem("token", loginData.access_token)
-
-      setTimeout(() => {
-        navigate("/matches")
-      }, 1000)
-
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
+    } catch {
+      toast.error("Server error")
     }
+
+    setLoading(false)
   }
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-900">
+    <div className="flex justify-center items-center h-screen bg-gray-900">
 
       <form
         onSubmit={handleRegister}
-        className="bg-gray-800 p-8 rounded-2xl shadow-xl w-96 border border-gray-700"
+        className="bg-gray-800 p-8 rounded-2xl shadow-2xl w-96 border border-gray-700"
       >
 
         <h2 className="text-2xl font-bold text-white mb-6 text-center">
-          Rejestracja
+          Create Account
         </h2>
 
-        {/* EMAIL */}
-        <div className="mb-4">
-          <label className="block text-gray-300 mb-1">
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full p-3 rounded bg-white text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-        </div>
+        <input
+          type="text"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          className="w-full mb-4 p-3 rounded bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-green-500 outline-none transition"
+        />
 
-        {/* PASSWORD */}
-        <div className="mb-4">
-          <label className="block text-gray-300 mb-1">
-            Hasło
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full p-3 rounded bg-white text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-        </div>
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="w-full mb-4 p-3 rounded bg-gray-700 text-white border border-gray-600 focus:ring-2 focus:ring-green-500 outline-none transition"
+        />
 
-        {/* CONFIRM PASSWORD */}
-        <div className="mb-4">
-          <label className="block text-gray-300 mb-1">
-            Powtórz hasło
-          </label>
-          <input
-            type="password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            className="w-full p-3 rounded bg-white text-black border border-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500"
-          />
-        </div>
-
-        {/* ERROR */}
-        {error && (
-          <div className="text-red-400 mb-4 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* SUCCESS */}
-        {success && (
-          <div className="text-green-400 mb-4 text-sm">
-            {success}
-          </div>
-        )}
-
-        {/* BUTTON */}
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg font-semibold transition"
+          className={`w-full p-3 rounded font-semibold transition ${
+            loading
+              ? "bg-gray-600 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
         >
-          {loading ? "Tworzenie konta..." : "Zarejestruj się"}
+          {loading ? "Creating account..." : "Sign Up"}
         </button>
+
+        <div className="mt-4 text-sm text-gray-400 text-center">
+          Already have an account?
+          <Link
+            to="/login"
+            className="text-green-400 ml-1 hover:underline"
+          >
+            Sign In
+          </Link>
+        </div>
 
       </form>
 

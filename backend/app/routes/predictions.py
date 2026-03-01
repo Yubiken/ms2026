@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, Field
-from datetime import datetime, timezone
 from sqlalchemy import func
+from pydantic import BaseModel, Field
+from datetime import datetime
+
 from ..database import get_db
 from ..models import Prediction, Match, User
 from .users import get_current_user
@@ -21,13 +22,13 @@ router = APIRouter(tags=["Predictions"])
 
 class PredictionCreate(BaseModel):
     match_id: int = Field(..., description="ID meczu")
-    home_score: int = Field(..., ge=0, le=20, description="Gole gospodarzy (0-20)")
-    away_score: int = Field(..., ge=0, le=20, description="Gole gości (0-20)")
+    home_score: int = Field(..., ge=0, le=20)
+    away_score: int = Field(..., ge=0, le=20)
 
 
 class PredictionUpdate(BaseModel):
-    home_score: int = Field(..., ge=0, le=20, description="Nowa liczba goli gospodarzy")
-    away_score: int = Field(..., ge=0, le=20, description="Nowa liczba goli gości")
+    home_score: int = Field(..., ge=0, le=20)
+    away_score: int = Field(..., ge=0, le=20)
 
 
 class MatchResult(BaseModel):
@@ -36,47 +37,23 @@ class MatchResult(BaseModel):
 
 
 # ==============================
-# POMOCNICZA FUNKCJA UTC
+# CREATE PREDICTION
 # ==============================
 
-def to_utc(dt: datetime) -> datetime:
-    """
-    SQLite zwraca naive datetime
-    Konwertujemy zawsze do UTC aware datetime
-    """
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
-
-
-# ==============================
-# DODANIE TYPU
-# ==============================
-
-@router.post(
-    "/predictions",
-    summary="Dodaj typ meczu",
-    description="Zapisuje typ wyniku dla wybranego meczu. Możliwe tylko przed rozpoczęciem meczu."
-)
+@router.post("/predictions")
 def create_prediction(
     prediction: PredictionCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
     match = db.query(Match).filter(Match.id == prediction.match_id).first()
 
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    now = datetime.now(timezone.utc)
-    match_start = to_utc(match.start_time)
+    now = datetime.now()
 
-    # blokada po rozpoczęciu meczu
-    if now >= match_start:
-        logger.warning(
-            f"User {current_user.id} tried to bet after match start {match.id}"
-        )
+    if now >= match.start_time:
         raise HTTPException(
             status_code=400,
             detail="Typowanie zamknięte – mecz już się rozpoczął"
@@ -105,9 +82,7 @@ def create_prediction(
     db.commit()
     db.refresh(new_prediction)
 
-    logger.info(
-        f"Prediction created: user={current_user.id}, match={match.id}"
-    )
+    logger.info(f"Prediction created user={current_user.id} match={match.id}")
 
     return {
         "message": "Prediction added",
@@ -116,49 +91,33 @@ def create_prediction(
 
 
 # ==============================
-# EDYCJA TYPU
+# UPDATE PREDICTION
 # ==============================
 
-@router.put(
-    "/predictions/{prediction_id}",
-    summary="Edytuj typ meczu",
-    description="Pozwala edytować własny typ, ale tylko przed rozpoczęciem meczu."
-)
+@router.put("/predictions/{prediction_id}")
 def update_prediction(
     prediction_id: int,
     data: PredictionUpdate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
     prediction = db.query(Prediction).filter(
         Prediction.id == prediction_id
     ).first()
 
     if not prediction:
-        raise HTTPException(
-            status_code=404,
-            detail="Prediction not found"
-        )
+        raise HTTPException(status_code=404, detail="Prediction not found")
 
-    # sprawdź właściciela
     if prediction.user_id != current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="To nie Twój typ"
-        )
+        raise HTTPException(status_code=403, detail="To nie Twój typ")
 
     match = db.query(Match).filter(
         Match.id == prediction.match_id
     ).first()
 
-    now = datetime.now(timezone.utc)
-    match_start = to_utc(match.start_time)
+    now = datetime.now()
 
-    if now >= match_start:
-        logger.warning(
-            f"User {current_user.id} tried to edit after match start {match.id}"
-        )
+    if now >= match.start_time:
         raise HTTPException(
             status_code=400,
             detail="Typowanie zamknięte – mecz już się rozpoczął"
@@ -170,38 +129,39 @@ def update_prediction(
     db.commit()
     db.refresh(prediction)
 
-    logger.info(
-        f"Prediction updated: user={current_user.id}, match={match.id}"
-    )
+    logger.info(f"Prediction updated user={current_user.id}")
 
-    return {
-        "message": "Prediction updated"
-    }
+    return {"message": "Prediction updated"}
 
 
 # ==============================
-# MOJE TYPY
+# MY PREDICTIONS
 # ==============================
 
-@router.get(
-    "/my-predictions",
-    summary="Pobierz moje typy",
-    description="Zwraca wszystkie typy aktualnie zalogowanego użytkownika."
-)
+@router.get("/my-predictions")
 def get_my_predictions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-
-    predictions = db.query(Prediction).filter(
-        Prediction.user_id == current_user.id
-    ).all()
+    predictions = (
+        db.query(Prediction)
+        .join(Match)
+        .filter(Prediction.user_id == current_user.id)
+        .all()
+    )
 
     return [
         {
             "id": p.id,
-            "match": f"{p.match.home_team} vs {p.match.away_team}",
-            "prediction": f"{p.home_score}:{p.away_score}",
+            "match_id": p.match.id,
+            "home_team": p.match.home_team,
+            "away_team": p.match.away_team,
+            "start_time": p.match.start_time,
+            "is_finished": p.match.is_finished,
+            "final_home_score": p.match.home_score,
+            "final_away_score": p.match.away_score,
+            "prediction_home": p.home_score,
+            "prediction_away": p.away_score,
             "points": p.points
         }
         for p in predictions
@@ -209,25 +169,17 @@ def get_my_predictions(
 
 
 # ==============================
-# LICZENIE PUNKTÓW
+# CALCULATE POINTS
 # ==============================
 
 def calculate_points(prediction: Prediction, match: Match) -> int:
-    """
-    1 pkt – poprawny zwycięzca / remis
-    +1 pkt – dokładny wynik
-    max 2 pkt
-    """
-
     real_home = match.home_score
     real_away = match.away_score
 
     pred_home = prediction.home_score
     pred_away = prediction.away_score
 
-    # dokładny wynik
     if pred_home == real_home and pred_away == real_away:
-        logger.info(f"Exact score hit for prediction {prediction.id}")
         return 2
 
     real_diff = real_home - real_away
@@ -238,42 +190,28 @@ def calculate_points(prediction: Prediction, match: Match) -> int:
         or (real_diff < 0 and pred_diff < 0)
         or (real_diff == 0 and pred_diff == 0)
     ):
-        logger.info(f"Correct winner/draw for prediction {prediction.id}")
         return 1
 
     return 0
 
 
 # ==============================
-# ZAMKNIJ MECZ I NALICZ PUNKTY
+# FINISH MATCH
 # ==============================
 
-@router.post(
-    "/matches/{match_id}/finish",
-    summary="Zamknij mecz i nalicz punkty",
-    description="Ustawia wynik meczu i automatycznie nalicza punkty."
-)
+@router.post("/matches/{match_id}/finish")
 def finish_match(
     match_id: int,
     result: MatchResult,
     db: Session = Depends(get_db)
 ):
-
-    match = db.query(Match).filter(
-        Match.id == match_id
-    ).first()
+    match = db.query(Match).filter(Match.id == match_id).first()
 
     if not match:
-        raise HTTPException(
-            status_code=404,
-            detail="Match not found"
-        )
+        raise HTTPException(status_code=404, detail="Match not found")
 
     if match.is_finished:
-        raise HTTPException(
-            status_code=400,
-            detail="Match already finished"
-        )
+        raise HTTPException(status_code=400, detail="Match already finished")
 
     match.home_score = result.home_score
     match.away_score = result.away_score
@@ -283,44 +221,25 @@ def finish_match(
         Prediction.match_id == match_id
     ).all()
 
-    logger.info(f"Finishing match {match_id}")
-
     for prediction in predictions:
-
-        points = calculate_points(prediction, match)
-
-        prediction.points = points
-
-        logger.info(
-            f"Prediction {prediction.id} user={prediction.user_id} points={points}"
-        )
+        prediction.points = calculate_points(prediction, match)
 
     db.commit()
 
-    return [
-        {
-            "prediction_id": p.id,
-            "user_id": p.user_id,
-            "points": p.points
-        }
-        for p in predictions
-    ]
+    return {"message": "Match finished and points calculated"}
+
 
 # ==============================
 # LEADERBOARD
 # ==============================
 
-@router.get(
-    "/leaderboard",
-    summary="Tabela wyników",
-    description="Zwraca ranking użytkowników według liczby zdobytych punktów."
-)
+@router.get("/leaderboard")
 def leaderboard(db: Session = Depends(get_db)):
 
     results = (
         db.query(
             User.id,
-            User.email,
+            User.username,
             func.coalesce(func.sum(Prediction.points), 0).label("total_points")
         )
         .outerjoin(Prediction, Prediction.user_id == User.id)
@@ -329,14 +248,78 @@ def leaderboard(db: Session = Depends(get_db)):
         .all()
     )
 
-    logger.info("Leaderboard requested")
-
     return [
         {
             "position": index + 1,
             "user_id": r.id,
-            "email": r.email,
+            "username": r.username,
             "points": int(r.total_points)
         }
         for index, r in enumerate(results)
+    ]
+
+
+# ==============================
+# MATCHES LIST
+# ==============================
+
+@router.get("/matches")
+def get_matches(db: Session = Depends(get_db)):
+    matches = db.query(Match).order_by(Match.start_time.asc()).all()
+
+    return [
+        {
+            "id": m.id,
+            "home_team": m.home_team,
+            "away_team": m.away_team,
+            "start_time": m.start_time,
+            "stage": m.stage,
+            "group_name": m.group_name,
+            "is_finished": m.is_finished,
+            "home_score": m.home_score,
+            "away_score": m.away_score
+        }
+        for m in matches
+    ]
+
+
+# ==============================
+# VIEW ALL PREDICTIONS (AFTER START)
+# ==============================
+
+@router.get("/matches/{match_id}/predictions")
+def get_match_predictions(
+    match_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    match = db.query(Match).filter(Match.id == match_id).first()
+
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    now = datetime.now()
+    print("NOW:", datetime.now())
+    print("MATCH START:", match.start_time)
+
+    if now < match.start_time:
+        raise HTTPException(
+            status_code=403,
+            detail="Predictions visible only after match start"
+        )
+
+    predictions = (
+        db.query(Prediction)
+        .join(User)
+        .filter(Prediction.match_id == match_id)
+        .all()
+    )
+
+    return [
+        {
+            "username": p.user.username,
+            "prediction": f"{p.home_score}:{p.away_score}",
+            "points": p.points if match.is_finished else None
+        }
+        for p in predictions
     ]
