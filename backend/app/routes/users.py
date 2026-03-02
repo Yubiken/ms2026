@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from datetime import datetime, timedelta
 
 from ..database import get_db
@@ -28,6 +28,7 @@ security = HTTPBearer()
 
 class UserCreate(BaseModel):
     username: str
+    email: EmailStr
     password: str
 
 
@@ -71,19 +72,22 @@ def create_access_token(data: dict):
 # REGISTER
 # ===============================
 
-@router.post("/register", response_model=UserResponse)
+@router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
 
-    existing_user = db.query(User).filter(User.username == user.username).first()
+    # sprawdź czy username istnieje
+    existing_username = db.query(User).filter(User.username == user.username).first()
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username already exists")
 
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already exists"
-        )
+    # sprawdź czy email istnieje
+    existing_email = db.query(User).filter(User.email == user.email).first()
+    if existing_email:
+        raise HTTPException(status_code=400, detail="Email already exists")
 
     new_user = User(
         username=user.username,
+        email=user.email,
         password_hash=hash_password(user.password)
     )
 
@@ -91,7 +95,11 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    return new_user
+    # zapis do pliku email.txt
+    with open("email.txt", "a", encoding="utf-8") as f:
+        f.write(user.email + "\n")
+
+    return {"message": "User created"}
 
 
 # ===============================

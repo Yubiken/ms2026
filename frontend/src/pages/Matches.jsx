@@ -12,7 +12,6 @@ export default function Matches() {
   const [homeScore, setHomeScore] = useState("")
   const [awayScore, setAwayScore] = useState("")
 
-  // 🔥 nowy modal
   const [predictionsModal, setPredictionsModal] = useState(null)
   const [matchPredictions, setMatchPredictions] = useState([])
 
@@ -46,7 +45,6 @@ export default function Matches() {
   }
 
   const openModal = (match) => {
-
     const existing = myPredictions.find(p => p.match_id === match.id)
 
     if (existing) {
@@ -72,7 +70,7 @@ export default function Matches() {
       )
 
       if (!response.ok) {
-        toast.error("Predictions not available yet")
+        toast.error("Typy nie są jeszcze dostępne")
         return
       }
 
@@ -88,7 +86,7 @@ export default function Matches() {
   const submitPrediction = async () => {
 
     if (homeScore === "" || awayScore === "") {
-      toast.error("Enter score")
+      toast.error("Wprowadź wynik meczu")
       return
     }
 
@@ -120,7 +118,7 @@ export default function Matches() {
           return
         }
 
-        toast.success("Prediction saved 🚀")
+        toast.success("Twój typ został zapisany 🚀")
 
       } else {
 
@@ -146,7 +144,7 @@ export default function Matches() {
           return
         }
 
-        toast.success("Prediction updated 🔄")
+        toast.success("Twój typ został zaktualizowany 🔄")
       }
 
       setSelectedMatch(null)
@@ -162,125 +160,169 @@ export default function Matches() {
   }
 
   return (
-    <div className="p-8">
+    <div className="relative min-h-screen bg-[#0b0f1a] text-white px-6 py-10">
 
-      <h1 className="text-2xl font-bold mb-6">Matches</h1>
+      <div className="max-w-6xl mx-auto">
 
-      <div className="grid gap-4">
+        {/* HEADER */}
+        <div className="mb-10 text-center">
+          <h1 className="text-4xl font-black 
+                         bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 
+                         bg-clip-text text-transparent">
+            Mecze
+          </h1>
+          <div className="h-1 w-32 mx-auto mt-3 
+                          bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 
+                          rounded-full">
+          </div>
+        </div>
 
-        {matches.map(match => {
+        {/* MATCHES */}
+        <div className="grid gap-6">
 
-          const isStarted = new Date(match.start_time) <= new Date()
-          const myPrediction = myPredictions.find(p => p.match_id === match.id)
+          {matches.map(match => {
 
-          return (
-            <div
-              key={match.id}
-              className="bg-gray-800 p-4 rounded-xl border border-gray-700 flex justify-between items-center"
-            >
-              <div>
-                <div className="font-semibold">
-                  {match.home_team} vs {match.away_team}
-                </div>
+            const isStarted = new Date(match.start_time) <= new Date()
+            const myPrediction = myPredictions.find(p => p.match_id === match.id)
 
-                <div className="text-sm text-gray-400">
-                  {new Date(match.start_time).toLocaleString("pl-PL")}
-                </div>
-
-                {myPrediction && (
-                  <div className="text-sm text-green-400 mt-1">
-                    Your prediction: {myPrediction.prediction_home}:{myPrediction.prediction_away}
+            return (
+              <div
+                key={match.id}
+                className="bg-white/5 backdrop-blur-lg 
+                           border border-white/10 
+                           p-6 rounded-2xl 
+                           flex justify-between items-center 
+                           hover:bg-white/10 transition duration-300"
+              >
+                <div>
+                  <div className="text-lg font-bold tracking-wide">
+                    {match.home_team}
+                    <span className="mx-2 text-gray-400">vs</span>
+                    {match.away_team}
                   </div>
-                )}
+
+                  <div className="text-sm text-gray-400 mt-1">
+                    {new Date(match.start_time).toLocaleString("pl-PL")}
+                  </div>
+
+                  {myPrediction && (
+                    <div className="text-sm text-yellow-400 mt-2 font-semibold">
+                      Twój typ: {myPrediction.prediction_home}:{myPrediction.prediction_away}
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  {!isStarted ? (
+                    <button
+                      onClick={() => openModal(match)}
+                      className="px-5 py-2 rounded-full font-bold uppercase text-sm
+                                 bg-gradient-to-r from-red-600 to-red-700
+                                 hover:from-red-700 hover:to-red-800
+                                 transition shadow-lg"
+                    >
+                      {myPrediction ? "Edytuj" : "Typuj"}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => fetchMatchPredictions(match)}
+                      className="px-5 py-2 rounded-full font-bold uppercase text-sm
+                                 bg-gradient-to-r from-purple-600 to-purple-700
+                                 hover:from-purple-700 hover:to-purple-800
+                                 transition shadow-lg"
+                    >
+                      Zobacz typy
+                    </button>
+                  )}
+                </div>
+
               </div>
+            )
+          })}
 
-              <div>
-
-                {!isStarted ? (
-                  <button
-                    onClick={() => openModal(match)}
-                    className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded"
-                  >
-                    {myPrediction ? "Edit" : "Predict"}
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => fetchMatchPredictions(match)}
-                    className="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded"
-                  >
-                    View Predictions
-                  </button>
-                )}
-
-              </div>
-            </div>
-          )
-        })}
-
+        </div>
       </div>
 
-      {/* PREDICT MODAL */}
+      {/* ===== MODAL TYP ===== */}
       {selectedMatch && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center">
-          <div className="bg-gray-800 p-6 rounded-xl w-96 border border-gray-700">
-            <h2 className="text-xl font-bold mb-4 text-center">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
+
+          <div className="bg-[#111827] border border-white/10 
+                          p-8 rounded-3xl w-96 shadow-2xl text-center">
+
+            <h2 className="text-2xl font-bold mb-6">
               {selectedMatch.home_team} vs {selectedMatch.away_team}
             </h2>
 
-            <div className="flex justify-between items-center mb-4">
+            <div className="flex justify-center items-center gap-6 mb-6">
+
               <input
                 type="number"
                 min="0"
                 max="20"
                 value={homeScore}
                 onChange={(e) => setHomeScore(e.target.value)}
-                className="w-20 p-2 rounded bg-gray-700 text-white border border-gray-600 text-center"
+                className="w-20 p-3 rounded-xl bg-white/10 text-white text-center
+                           border border-white/20 focus:border-red-500 outline-none"
               />
-              <span className="text-xl">:</span>
+
+              <span className="text-2xl font-bold">:</span>
+
               <input
                 type="number"
                 min="0"
                 max="20"
                 value={awayScore}
                 onChange={(e) => setAwayScore(e.target.value)}
-                className="w-20 p-2 rounded bg-gray-700 text-white border border-gray-600 text-center"
+                className="w-20 p-3 rounded-xl bg-white/10 text-white text-center
+                           border border-white/20 focus:border-red-500 outline-none"
               />
+
             </div>
 
             <div className="flex justify-between">
+
               <button
                 onClick={() => setSelectedMatch(null)}
-                className="px-4 py-2 bg-gray-600 rounded"
+                className="px-5 py-2 bg-gray-600 rounded-full hover:bg-gray-700 transition"
               >
-                Cancel
+                Anuluj
               </button>
+
               <button
                 onClick={submitPrediction}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded"
+                className="px-5 py-2 rounded-full font-bold
+                           bg-gradient-to-r from-red-600 to-red-700
+                           hover:from-red-700 hover:to-red-800 transition"
               >
-                Save
+                Zapisz
               </button>
+
             </div>
+
           </div>
         </div>
       )}
 
-      {/* VIEW PREDICTIONS MODAL */}
+      {/* ===== MODAL TYPOW ===== */}
       {predictionsModal && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center">
-          <div className="bg-gray-800 p-6 rounded-xl w-96 border border-gray-700">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
 
-            <h2 className="text-xl font-bold mb-4 text-center">
-              Predictions
+          <div className="bg-[#111827] border border-white/10 
+                          p-8 rounded-3xl w-96 shadow-2xl">
+
+            <h2 className="text-2xl font-bold mb-6 text-center">
+              Typy użytkowników
             </h2>
 
-            <div className="space-y-3 max-h-80 overflow-y-auto">
+            <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
               {matchPredictions.map((p, index) => (
                 <div
                   key={index}
-                  className="flex justify-between border-b border-gray-600 pb-2"
+                  className="flex justify-between items-center 
+                             border-b border-white/10 pb-2"
                 >
-                  <div>{p.username}</div>
+                  <div className="font-semibold">{p.username}</div>
                   <div>{p.prediction}</div>
                   {p.points !== null && (
                     <div className="text-yellow-400 font-bold">
@@ -291,12 +333,12 @@ export default function Matches() {
               ))}
             </div>
 
-            <div className="mt-4 text-center">
+            <div className="mt-6 text-center">
               <button
                 onClick={() => setPredictionsModal(null)}
-                className="px-4 py-2 bg-gray-600 rounded"
+                className="px-6 py-2 bg-gray-600 rounded-full hover:bg-gray-700 transition"
               >
-                Close
+                Zamknij
               </button>
             </div>
 
