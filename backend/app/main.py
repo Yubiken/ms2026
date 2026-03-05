@@ -8,6 +8,13 @@ from fastapi.middleware.cors import CORSMiddleware
 Base.metadata.create_all(bind=engine)
 print("Tabele utworzone w bazie app.db")
 
+
+
+@app.get("/")
+def root():
+    return {"status": "Backend działa 🚀"}
+
+
 app = FastAPI(
     title="MS 2026 Predictor API",
     description="API do typowania wyników MŚ 2026",
