@@ -1,8 +1,12 @@
+import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-# Na start używamy SQLite, później zmienimy na PostgreSQL
-DATABASE_URL = "sqlite:////tmp/test.db"
+# Sprawdź czy jesteśmy na Render
+if os.getenv("RENDER"):
+    DATABASE_URL = "sqlite:////tmp/test.db"
+else:
+    DATABASE_URL = "sqlite:///./test.db"
 
 engine = create_engine(
     DATABASE_URL,
@@ -10,10 +14,8 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(bind=engine)
-
 Base = declarative_base()
 
-# Funkcja pomocnicza do sesji
 def get_db():
     db = SessionLocal()
     try:

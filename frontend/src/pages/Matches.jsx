@@ -23,10 +23,10 @@ export default function Matches() {
     try {
 
       const [matchesRes, predictionsRes] = await Promise.all([
-        fetch("http://127.0.0.1:8000/matches", {
+        fetch("https://ligabejow.onrender.com/matches", {
           headers: { Authorization: `Bearer ${getToken()}` }
         }),
-        fetch("http://127.0.0.1:8000/my-predictions", {
+        fetch("https://ligabejow.onrender.com/my-predictions", {
           headers: { Authorization: `Bearer ${getToken()}` }
         })
       ])
@@ -61,7 +61,7 @@ export default function Matches() {
   const fetchMatchPredictions = async (match) => {
     try {
       const response = await fetch(
-        `http://127.0.0.1:8000/matches/${match.id}/predictions`,
+        `https://ligabejow.onrender.com/matches/${match.id}/predictions`,
         {
           headers: {
             Authorization: `Bearer ${getToken()}`
@@ -98,7 +98,7 @@ export default function Matches() {
 
       if (!existing) {
 
-        const response = await fetch("http://127.0.0.1:8000/predictions", {
+        const response = await fetch("https://ligabejow.onrender.com/predictions", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -123,7 +123,7 @@ export default function Matches() {
       } else {
 
         const response = await fetch(
-          `http://127.0.0.1:8000/predictions/${existing.id}`,
+          `https://ligabejow.onrender.com/predictions/${existing.id}`,
           {
             method: "PUT",
             headers: {

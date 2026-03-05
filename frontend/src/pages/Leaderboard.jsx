@@ -7,7 +7,7 @@ export default function Leaderboard() {
   const currentUser = getUsername()
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/leaderboard", {
+    fetch("https://ligabejow.onrender.com/leaderboard", {
       headers: {
         Authorization: `Bearer ${getToken()}`
       }
