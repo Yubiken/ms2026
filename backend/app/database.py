@@ -2,7 +2,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 # Na start używamy SQLite, później zmienimy na PostgreSQL
-DATABASE_URL = "sqlite:///./app.db"
+DATABASE_URL = "sqlite:////tmp/test.db"
 
 engine = create_engine(
     DATABASE_URL,
