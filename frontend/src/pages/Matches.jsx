@@ -163,7 +163,7 @@ export default function Matches() {
   return (
     <div className="relative min-h-screen bg-[#0b0f1a] text-white px-6 py-10">
 
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
 
         {/* HEADER */}
         <div className="mb-10 text-center">
