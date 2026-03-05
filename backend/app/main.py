@@ -25,7 +25,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # tymczasowo
+    allow_origins=[
+        "http://localhost:5173",
+        "https://ms2026.vercel.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
