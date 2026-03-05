@@ -50,13 +50,18 @@ def create_match(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    start_time = match.start_time
 
-    start_time_utc = to_utc(match.start_time)
+    if start_time.tzinfo is None:
+    # odejmij 1h (zimowy) albo 2h (letni)
+        start_time = start_time.replace(tzinfo=timezone.utc)
+    else:
+        start_time = start_time.astimezone(timezone.utc)
 
     new_match = Match(
         home_team=match.home_team,
         away_team=match.away_team,
-        start_time=start_time_utc,
+        start_time=start_time,
         stage=match.stage,
         group_name=match.group_name
     )
