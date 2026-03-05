@@ -1,19 +1,12 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from .database import Base, engine
 from .routes import users, predictions
 from app.routes import matches
 from app.routes import admin
-from fastapi.middleware.cors import CORSMiddleware
 
 Base.metadata.create_all(bind=engine)
 print("Tabele utworzone w bazie app.db")
-
-
-
-@app.get("/")
-def root():
-    return {"status": "Backend działa 🚀"}
-
 
 app = FastAPI(
     title="MS 2026 Predictor API",
@@ -30,8 +23,6 @@ origins = [
     "http://127.0.0.1:5173",
 ]
 
-from fastapi.middleware.cors import CORSMiddleware
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # tymczasowo
@@ -39,6 +30,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.get("/")
+def root():
+    return {"status": "Backend działa 🚀"}
     
 app.include_router(users.router)
 app.include_router(predictions.router)
