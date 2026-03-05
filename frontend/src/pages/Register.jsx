@@ -4,6 +4,7 @@ import toast from "react-hot-toast"
 
 export default function Register() {
 
+  const API = import.meta.env.VITE_API_URL
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")

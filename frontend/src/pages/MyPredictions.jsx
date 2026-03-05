@@ -3,11 +3,12 @@ import { getToken } from "../auth"
 
 export default function MyPredictions() {
 
+  const API = import.meta.env.VITE_API_URL
   const [predictions, setPredictions] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("https://ligabejow.onrender.com/my-predictions", {
+    fetch(`${API}/my-predictions`, {
       headers: {
         Authorization: `Bearer ${getToken()}`
       }

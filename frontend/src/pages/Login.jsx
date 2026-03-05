@@ -3,8 +3,10 @@ import { useNavigate, Link } from "react-router-dom"
 import { saveToken } from "../auth"
 import toast from "react-hot-toast"
 
-export default function Login({ onLogin }) {
 
+export default function Login({ onLogin }) {
+  
+  const API = import.meta.env.VITE_API_URL
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)

@@ -5,9 +5,10 @@ export default function Leaderboard() {
 
   const [ranking, setRanking] = useState([])
   const currentUser = getUsername()
+  const API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
-    fetch("https://ligabejow.onrender.com/leaderboard", {
+    fetch(`${API}/leaderboard`, {
       headers: {
         Authorization: `Bearer ${getToken()}`
       }

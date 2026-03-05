@@ -4,6 +4,7 @@ import { getToken } from "../auth"
 
 export default function Matches() {
 
+  const API = import.meta.env.VITE_API_URL
   const [matches, setMatches] = useState([])
   const [myPredictions, setMyPredictions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -23,10 +24,10 @@ export default function Matches() {
     try {
 
       const [matchesRes, predictionsRes] = await Promise.all([
-        fetch("https://ligabejow.onrender.com/matches", {
+        fetch(`${API}/matches`, {
           headers: { Authorization: `Bearer ${getToken()}` }
         }),
-        fetch("https://ligabejow.onrender.com/my-predictions", {
+        fetch(`${API}/my-predictions`, {
           headers: { Authorization: `Bearer ${getToken()}` }
         })
       ])
@@ -61,7 +62,7 @@ export default function Matches() {
   const fetchMatchPredictions = async (match) => {
     try {
       const response = await fetch(
-        `https://ligabejow.onrender.com/matches/${match.id}/predictions`,
+        `${API}/matches/${match.id}/predictions`,
         {
           headers: {
             Authorization: `Bearer ${getToken()}`
@@ -98,7 +99,7 @@ export default function Matches() {
 
       if (!existing) {
 
-        const response = await fetch("https://ligabejow.onrender.com/predictions", {
+        const response = await fetch(`${API}/predictions`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -123,7 +124,7 @@ export default function Matches() {
       } else {
 
         const response = await fetch(
-          `https://ligabejow.onrender.com/predictions/${existing.id}`,
+          `${API}/predictions/${existing.id}`,
           {
             method: "PUT",
             headers: {
