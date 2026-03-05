@@ -6,3 +6,4 @@ passlib
 bcrypt
 pydantic
 email-validator
+argon2-cffi
