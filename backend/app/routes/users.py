@@ -4,7 +4,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from pydantic import BaseModel, EmailStr
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+import os
 
 from ..database import get_db
 from ..models import User
@@ -15,7 +16,11 @@ router = APIRouter(tags=["Users"])
 # SECURITY CONFIG
 # ===============================
 
-SECRET_KEY = "supersecretkey"
+SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY not set in environment variables")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -63,7 +68,7 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -75,12 +80,10 @@ def create_access_token(data: dict):
 @router.post("/register")
 def register(user: UserCreate, db: Session = Depends(get_db)):
 
-    # sprawdź czy username istnieje
     existing_username = db.query(User).filter(User.username == user.username).first()
     if existing_username:
         raise HTTPException(status_code=400, detail="Username already exists")
 
-    # sprawdź czy email istnieje
     existing_email = db.query(User).filter(User.email == user.email).first()
     if existing_email:
         raise HTTPException(status_code=400, detail="Email already exists")
@@ -95,7 +98,7 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)
 
-    # zapis do pliku email.txt
+    # zapis do pliku (MVP only)
     with open("email.txt", "a", encoding="utf-8") as f:
         f.write(user.email + "\n")
 
