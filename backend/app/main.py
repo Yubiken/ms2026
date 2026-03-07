@@ -6,7 +6,7 @@ from app.routes import matches
 from app.routes import admin
 
 Base.metadata.create_all(bind=engine)
-print("Tabele utworzone w bazie app.db")
+print("Database connected and tables ready")
 
 app = FastAPI(
     title="MS 2026 Predictor API",
@@ -42,3 +42,7 @@ app.include_router(users.router)
 app.include_router(predictions.router)
 app.include_router(matches.router)
 app.include_router(admin.router)
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
