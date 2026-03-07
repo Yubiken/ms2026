@@ -4,8 +4,14 @@ import os
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Jeśli działa na Render → użyj Postgresa
 if DATABASE_URL:
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_recycle=300
+    )
+# Jeśli działa lokalnie → użyj SQLite
 else:
     engine = create_engine(
         "sqlite:///./app.db",
@@ -21,7 +27,7 @@ SessionLocal = sessionmaker(
 Base = declarative_base()
 
 
-# 🔴 TEGO CI BRAKUJE
+# Dependency do FastAPI
 def get_db():
     db = SessionLocal()
     try:
