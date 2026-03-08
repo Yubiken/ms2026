@@ -36,7 +36,7 @@ export default function Navbar({ token, onLogout }) {
             className="text-lg sm:text-2xl font-black tracking-wide"
           >
             <span className="bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
-              ⚽ Liga 2026
+              ⚽ Liga Bejów 2026
             </span>
           </Link>
 
