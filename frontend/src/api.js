@@ -41,7 +41,7 @@ export async function register(email, password) {
   const data = await response.json()
 
   if (!response.ok) {
-    throw new Error(data.detail || "Register failed")
+    throw new Error(data.detail || "Register failed :(")
   }
 
   return data
