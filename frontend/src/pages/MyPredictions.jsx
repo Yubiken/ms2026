@@ -107,7 +107,7 @@ export default function MyPredictions() {
                   </div>
 
                   <div className="text-sm text-gray-400 mt-1">
-                    Start meczu: {new Date(p.start_time).toLocaleString("pl-PL", {
+                    {new Date(p.start_time).toLocaleString("pl-PL", {
                                 day: "2-digit",
                                 month: "2-digit",
                                 hour: "2-digit",
@@ -139,7 +139,7 @@ export default function MyPredictions() {
 
                   {p.is_finished ? (
                     <div className={`text-3xl font-black ${getPointsColor(p.points)}`}>
-                      {p.points} pts
+                      {p.points} punkty
                     </div>
                   ) : (
                     <div className="text-gray-500 text-xl">
