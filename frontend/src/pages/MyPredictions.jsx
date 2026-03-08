@@ -139,7 +139,7 @@ export default function MyPredictions() {
 
                   {p.is_finished ? (
                     <div className={`text-3xl font-black ${getPointsColor(p.points)}`}>
-                      {p.points} punkty
+                      {p.points} pts
                     </div>
                   ) : (
                     <div className="text-gray-500 text-xl">
