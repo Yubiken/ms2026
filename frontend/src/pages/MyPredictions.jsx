@@ -107,7 +107,12 @@ export default function MyPredictions() {
                   </div>
 
                   <div className="text-sm text-gray-400 mt-1">
-                    Kickoff: {new Date(p.start_time).toLocaleString("pl-PL")}
+                    Start meczu: {new Date(match.start_time).toLocaleString("pl-PL", {
+                                day: "2-digit",
+                                month: "2-digit",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })}
                   </div>
 
                   <div className="mt-3 text-sm">
