@@ -14,7 +14,19 @@ export default function Leaderboard() {
       }
     })
       .then(res => res.json())
-      .then(data => setRanking(data))
+      .then(data => {
+
+        // SORTOWANIE PO PUNKTACH
+        const sorted = [...data].sort((a, b) => b.points - a.points)
+
+        // NADANIE POZYCJI W RANKINGU
+        const withPosition = sorted.map((user, index) => ({
+          ...user,
+          position: index + 1
+        }))
+
+        setRanking(withPosition)
+      })
   }, [])
 
   if (ranking.length === 0) {
