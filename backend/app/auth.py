@@ -4,7 +4,7 @@ from jose import JWTError, jwt
 
 SECRET_KEY = "SUPER_SECRET_KEY_ZMIENIC_POZNIEJ"
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 30  # 30 dni
 
 
 def create_access_token(data: dict):
