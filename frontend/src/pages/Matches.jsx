@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
-import { getToken } from "../auth"
+import { apiRequest } from "../api"
 
 export default function Matches() {
 
-  const API = import.meta.env.VITE_API_URL
   const [matches, setMatches] = useState([])
   const [myPredictions, setMyPredictions] = useState([])
   const [loading, setLoading] = useState(true)
@@ -23,17 +22,12 @@ export default function Matches() {
   const fetchData = async () => {
     try {
 
-      const [matchesRes, predictionsRes] = await Promise.all([
-        fetch(`${API}/matches`, {
-          headers: { Authorization: `Bearer ${getToken()}` }
-        }),
-        fetch(`${API}/my-predictions`, {
-          headers: { Authorization: `Bearer ${getToken()}` }
-        })
+      const [matchesData, predictionsData] = await Promise.all([
+        apiRequest("/matches"),
+        apiRequest("/my-predictions")
       ])
 
-      const matchesData = await matchesRes.json()
-      const predictionsData = await predictionsRes.json()
+      if (!matchesData || !predictionsData) return
 
       setMatches(matchesData)
       setMyPredictions(Array.isArray(predictionsData) ? predictionsData : [])
@@ -61,21 +55,14 @@ export default function Matches() {
 
   const fetchMatchPredictions = async (match) => {
     try {
-      const response = await fetch(
-        `${API}/matches/${match.id}/predictions`,
-        {
-          headers: {
-            Authorization: `Bearer ${getToken()}`
-          }
-        }
-      )
 
-      if (!response.ok) {
+      const data = await apiRequest(`/matches/${match.id}/predictions`)
+
+      if (!data) {
         toast.error("Typy nie są jeszcze dostępne")
         return
       }
 
-      const data = await response.json()
       setMatchPredictions(data)
       setPredictionsModal(match)
 
@@ -99,12 +86,8 @@ export default function Matches() {
 
       if (!existing) {
 
-        const response = await fetch(`${API}/predictions`, {
+        const data = await apiRequest("/predictions", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${getToken()}`
-          },
           body: JSON.stringify({
             match_id: selectedMatch.id,
             home_score: Number(homeScore),
@@ -112,38 +95,21 @@ export default function Matches() {
           })
         })
 
-        const data = await response.json()
-
-        if (!response.ok) {
-          toast.error(data.detail || "Prediction failed")
-          return
-        }
+        if (!data) return
 
         toast.success("Twój typ został zapisany 🚀")
 
       } else {
 
-        const response = await fetch(
-          `${API}/predictions/${existing.id}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${getToken()}`
-            },
-            body: JSON.stringify({
-              home_score: Number(homeScore),
-              away_score: Number(awayScore)
-            })
-          }
-        )
+        const data = await apiRequest(`/predictions/${existing.id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            home_score: Number(homeScore),
+            away_score: Number(awayScore)
+          })
+        })
 
-        const data = await response.json()
-
-        if (!response.ok) {
-          toast.error(data.detail || "Update failed")
-          return
-        }
+        if (!data) return
 
         toast.success("Twój typ został zaktualizowany 🔄")
       }

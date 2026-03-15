@@ -1,24 +1,24 @@
 import { useEffect, useState } from "react"
-import { getToken } from "../auth"
+import { apiRequest } from "../api"
 
 export default function MyPredictions() {
 
-  const API = import.meta.env.VITE_API_URL
   const [predictions, setPredictions] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`${API}/my-predictions`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`
-      }
-    })
-      .then(res => res.json())
+
+    apiRequest("/my-predictions")
       .then(data => {
+
+        if (!data) return
+
         setPredictions(data)
         setLoading(false)
+
       })
       .catch(() => setLoading(false))
+
   }, [])
 
   if (loading) {
@@ -97,7 +97,6 @@ export default function MyPredictions() {
                            hover:bg-white/10 transition duration-300"
               >
 
-                {/* LEFT */}
                 <div>
 
                   <div className="text-lg font-bold tracking-wide">
@@ -108,11 +107,11 @@ export default function MyPredictions() {
 
                   <div className="text-sm text-gray-400 mt-1">
                     {new Date(p.start_time).toLocaleString("pl-PL", {
-                                day: "2-digit",
-                                month: "2-digit",
-                                hour: "2-digit",
-                                minute: "2-digit"
-                              })}
+                      day: "2-digit",
+                      month: "2-digit",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
                   </div>
 
                   <div className="mt-3 text-sm">
@@ -130,7 +129,6 @@ export default function MyPredictions() {
 
                 </div>
 
-                {/* RIGHT */}
                 <div className="text-right">
 
                   <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 ${getStatusBadge(status)}`}>

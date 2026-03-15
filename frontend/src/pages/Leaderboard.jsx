@@ -1,20 +1,18 @@
 import { useEffect, useState } from "react"
-import { getToken, getUsername } from "../auth"
+import { getUsername } from "../auth"
+import { apiRequest } from "../api"
 
 export default function Leaderboard() {
 
   const [ranking, setRanking] = useState([])
   const currentUser = getUsername()
-  const API = import.meta.env.VITE_API_URL
 
   useEffect(() => {
-    fetch(`${API}/leaderboard`, {
-      headers: {
-        Authorization: `Bearer ${getToken()}`
-      }
-    })
-      .then(res => res.json())
+
+    apiRequest("/leaderboard")
       .then(data => {
+
+        if (!data) return
 
         // SORTOWANIE PO PUNKTACH
         const sorted = [...data].sort((a, b) => b.points - a.points)
@@ -27,6 +25,7 @@ export default function Leaderboard() {
 
         setRanking(withPosition)
       })
+
   }, [])
 
   if (ranking.length === 0) {
@@ -107,7 +106,6 @@ export default function Leaderboard() {
                   }`}
               >
 
-                {/* LEFT */}
                 <div className="flex items-center gap-5">
 
                   <div className="text-2xl w-12 font-bold text-center">
@@ -133,7 +131,6 @@ export default function Leaderboard() {
 
                 </div>
 
-                {/* RIGHT */}
                 <div className="text-3xl font-black text-yellow-400">
                   {user.points}
                 </div>
