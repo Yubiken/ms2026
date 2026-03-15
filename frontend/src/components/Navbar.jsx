@@ -11,7 +11,24 @@ export default function Navbar({ token, onLogout }) {
 
   if (token) {
     try {
-      username = jwtDecode(token).sub
+
+      const decoded = jwtDecode(token)
+
+      const now = Date.now() / 1000
+
+      // TOKEN WYGASŁ
+      if (decoded.exp && decoded.exp < now) {
+
+        localStorage.removeItem("token")
+        onLogout()
+        navigate("/login")
+
+      } else {
+
+        username = decoded.sub
+
+      }
+
     } catch {
       username = null
     }
@@ -27,10 +44,8 @@ export default function Navbar({ token, onLogout }) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
 
-        {/* GŁÓWNY WIERSZ */}
         <div className="flex items-center justify-between">
 
-          {/* LOGO */}
           <Link
             to="/matches"
             className="text-lg sm:text-2xl font-black tracking-wide"
@@ -40,7 +55,6 @@ export default function Navbar({ token, onLogout }) {
             </span>
           </Link>
 
-          {/* DESKTOP MENU */}
           {token && (
             <div className="hidden md:flex items-center gap-8 text-sm uppercase tracking-widest font-semibold">
 
@@ -70,7 +84,6 @@ export default function Navbar({ token, onLogout }) {
             </div>
           )}
 
-          {/* MOBILE HAMBURGER */}
           {token && (
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
@@ -82,7 +95,6 @@ export default function Navbar({ token, onLogout }) {
 
         </div>
 
-        {/* MOBILE DROPDOWN */}
         {mobileOpen && token && (
           <div className="md:hidden mt-4 flex flex-col gap-4 text-sm uppercase tracking-widest font-semibold border-t border-white/10 pt-4">
 
