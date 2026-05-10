@@ -8,3 +8,4 @@ pydantic
 email-validator
 argon2-cffi
 psycopg2-binary
+zoneinfo

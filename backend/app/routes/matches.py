@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from ..database import get_db
 from ..models import Match, User
@@ -43,7 +44,7 @@ def to_utc(dt: datetime) -> datetime:
 @router.post(
     "/matches",
     summary="Dodaj mecz",
-    description="Tworzy nowy mecz z określoną godziną rozpoczęcia (UTC)."
+    description="Tworzy nowy mecz z określoną godziną rozpoczęcia."
 )
 def create_match(
     match: MatchCreate,
@@ -52,16 +53,19 @@ def create_match(
 ):
     start_time = match.start_time
 
+    # Jeśli frontend nie wysłał timezone,
+    # traktujemy czas jako lokalny (Polska)
     if start_time.tzinfo is None:
-    # odejmij 1h (zimowy) albo 2h (letni)
-        start_time = start_time.replace(tzinfo=timezone.utc)
-    else:
-        start_time = start_time.astimezone(timezone.utc)
+        local_tz = ZoneInfo("Europe/Warsaw")
+        start_time = start_time.replace(tzinfo=local_tz)
+
+    # zapis do bazy zawsze w UTC
+    start_time_utc = start_time.astimezone(timezone.utc)
 
     new_match = Match(
         home_team=match.home_team,
         away_team=match.away_team,
-        start_time=start_time,
+        start_time=start_time_utc,
         stage=match.stage,
         group_name=match.group_name
     )
