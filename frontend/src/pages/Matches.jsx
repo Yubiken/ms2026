@@ -169,7 +169,7 @@ export default function Matches() {
                   </div>
 
                   <div className="text-sm text-gray-400 mt-1">
-                    {new Date(match.start_time).toLocaleString("pl-PL", {
+                    {new Date(match.start_time).toISOString("pl-PL", {
                       day: "2-digit",
                       month: "2-digit",
                       hour: "2-digit",
