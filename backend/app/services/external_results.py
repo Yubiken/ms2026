@@ -40,6 +40,30 @@ def fetch_fixtures(match_date: date | None = None) -> list[ExternalFixture]:
     return _parse_api_football_fixtures(payload)
 
 
+def fetch_fixtures_debug(match_date: date | None = None) -> dict[str, Any]:
+    payload = _fetch_fixtures_payload(match_date)
+    return {
+        "request": payload.get("parameters", {}),
+        "errors": payload.get("errors", {}),
+        "results": payload.get("results"),
+        "paging": payload.get("paging", {}),
+        "fixtures": [
+            {
+                "external_source": "api-football",
+                "external_id": fixture.external_id,
+                "date": fixture.date,
+                "status": fixture.status,
+                "elapsed": fixture.elapsed,
+                "home_team": fixture.home_team,
+                "away_team": fixture.away_team,
+                "home_score": fixture.home_score,
+                "away_score": fixture.away_score,
+            }
+            for fixture in _parse_api_football_fixtures(payload)
+        ],
+    }
+
+
 def fetch_finished_results(match_date: date | None = None) -> list[ExternalMatchResult]:
     payload = _fetch_fixtures_payload(match_date)
     return _parse_api_football_results(payload)

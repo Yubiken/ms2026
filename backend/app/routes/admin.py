@@ -7,7 +7,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import Match
 from app.schemas.match import MatchResultUpdate
-from app.services.external_results import ExternalResultsError, fetch_finished_results, fetch_fixtures
+from app.services.external_results import (
+    ExternalResultsError,
+    fetch_finished_results,
+    fetch_fixtures,
+    fetch_fixtures_debug,
+)
 from app.services.scoring import set_final_result
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -94,8 +99,12 @@ def sync_match_results(
 @router.get("/external-fixtures")
 def get_external_fixtures(
     match_date: date | None = Query(default=None, description="Optional date filter in YYYY-MM-DD format"),
+    debug: bool = Query(default=False, description="Return API-Football parameters and errors"),
 ):
     try:
+        if debug:
+            return fetch_fixtures_debug(match_date)
+
         fixtures = fetch_fixtures(match_date)
     except ExternalResultsError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
