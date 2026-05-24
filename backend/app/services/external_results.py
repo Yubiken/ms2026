@@ -19,11 +19,33 @@ class ExternalMatchResult:
     status: str
 
 
+@dataclass
+class ExternalFixture:
+    external_id: str
+    date: str | None
+    status: str | None
+    elapsed: int | None
+    home_team: str | None
+    away_team: str | None
+    home_score: int | None
+    away_score: int | None
+
+
 class ExternalResultsError(RuntimeError):
     pass
 
 
+def fetch_fixtures(match_date: date | None = None) -> list[ExternalFixture]:
+    payload = _fetch_fixtures_payload(match_date)
+    return _parse_api_football_fixtures(payload)
+
+
 def fetch_finished_results(match_date: date | None = None) -> list[ExternalMatchResult]:
+    payload = _fetch_fixtures_payload(match_date)
+    return _parse_api_football_results(payload)
+
+
+def _fetch_fixtures_payload(match_date: date | None = None) -> dict[str, Any]:
     api_key = os.getenv("FOOTBALL_API_KEY")
 
     if not api_key:
@@ -61,7 +83,38 @@ def fetch_finished_results(match_date: date | None = None) -> list[ExternalMatch
     except json.JSONDecodeError as exc:
         raise ExternalResultsError("External API returned invalid JSON") from exc
 
-    return _parse_api_football_results(payload)
+    return payload
+
+
+def _parse_api_football_fixtures(payload: dict[str, Any]) -> list[ExternalFixture]:
+    fixtures: list[ExternalFixture] = []
+
+    for item in payload.get("response", []):
+        fixture = item.get("fixture") or {}
+        goals = item.get("goals") or {}
+        teams = item.get("teams") or {}
+        home_team = teams.get("home") or {}
+        away_team = teams.get("away") or {}
+        status = fixture.get("status") or {}
+        fixture_id = fixture.get("id")
+
+        if fixture_id is None:
+            continue
+
+        fixtures.append(
+            ExternalFixture(
+                external_id=str(fixture_id),
+                date=fixture.get("date"),
+                status=status.get("short"),
+                elapsed=status.get("elapsed"),
+                home_team=home_team.get("name"),
+                away_team=away_team.get("name"),
+                home_score=goals.get("home"),
+                away_score=goals.get("away"),
+            )
+        )
+
+    return fixtures
 
 
 def _parse_api_football_results(payload: dict[str, Any]) -> list[ExternalMatchResult]:
