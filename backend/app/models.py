@@ -46,6 +46,10 @@ class Match(Base):
     # Grupa (A, B, C...) tylko dla fazy grupowej
     group_name = Column(String, nullable=True)
 
+    # Identyfikator meczu w zewnetrznym API, np. API-Football fixture id
+    external_source = Column(String, nullable=True)
+    external_id = Column(String, nullable=True, index=True)
+
     # Wynik
     home_score = Column(Integer, nullable=True)
     away_score = Column(Integer, nullable=True)

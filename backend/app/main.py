@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import Base, engine
+from .database import Base, engine, ensure_match_external_columns
 from .routes import users, predictions
 from app.routes import matches
 from app.routes import admin
 
 Base.metadata.create_all(bind=engine)
+ensure_match_external_columns()
 print("Database connected and tables ready")
 
 app = FastAPI(

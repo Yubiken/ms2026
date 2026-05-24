@@ -21,6 +21,8 @@ class MatchCreate(BaseModel):
     start_time: datetime
     stage: str
     group_name: str | None = None
+    external_source: str | None = None
+    external_id: str | None = None
 
 
 # ==============================
@@ -67,7 +69,9 @@ def create_match(
         away_team=match.away_team,
         start_time=start_time_utc,
         stage=match.stage,
-        group_name=match.group_name
+        group_name=match.group_name,
+        external_source=match.external_source,
+        external_id=match.external_id
     )
 
     db.add(new_match)
@@ -101,6 +105,8 @@ def get_matches(db: Session = Depends(get_db)):
             "start_time": m.start_time,
             "stage": m.stage,
             "group_name": m.group_name,
+            "external_source": m.external_source,
+            "external_id": m.external_id,
             "is_finished": m.is_finished,
             "home_score": m.home_score,
             "away_score": m.away_score

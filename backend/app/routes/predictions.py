@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 
 from ..database import get_db
 from ..models import Prediction, Match, User
+from ..services.scoring import set_final_result
 from .users import get_current_user
 
 import logging
@@ -182,31 +183,6 @@ def get_my_predictions(
 
 
 # ==============================
-# CALCULATE POINTS
-# ==============================
-
-def calculate_points(prediction: Prediction, match: Match) -> int:
-
-    if (
-        prediction.home_score == match.home_score
-        and prediction.away_score == match.away_score
-    ):
-        return 2
-
-    real_diff = match.home_score - match.away_score
-    pred_diff = prediction.home_score - prediction.away_score
-
-    if (
-        (real_diff > 0 and pred_diff > 0)
-        or (real_diff < 0 and pred_diff < 0)
-        or (real_diff == 0 and pred_diff == 0)
-    ):
-        return 1
-
-    return 0
-
-
-# ==============================
 # FINISH MATCH
 # ==============================
 
@@ -225,17 +201,7 @@ def finish_match(
     if match.is_finished:
         raise HTTPException(status_code=400, detail="Match already finished")
 
-    match.home_score = result.home_score
-    match.away_score = result.away_score
-    match.is_finished = True
-
-    predictions = db.query(Prediction).filter(
-        Prediction.match_id == match_id
-    ).all()
-
-    for prediction in predictions:
-        prediction.points = calculate_points(prediction, match)
-
+    set_final_result(db, match, result.home_score, result.away_score)
     db.commit()
 
     return {"message": "Match finished and points calculated"}

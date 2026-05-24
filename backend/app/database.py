@@ -1,4 +1,5 @@
 from sqlalchemy import create_engine
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
@@ -25,6 +26,26 @@ SessionLocal = sessionmaker(
 )
 
 Base = declarative_base()
+
+
+def ensure_match_external_columns():
+    inspector = inspect(engine)
+
+    if not inspector.has_table("matches"):
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("matches")}
+
+    with engine.begin() as connection:
+        if "external_source" not in existing_columns:
+            connection.execute(text("ALTER TABLE matches ADD COLUMN external_source VARCHAR"))
+
+        if "external_id" not in existing_columns:
+            connection.execute(text("ALTER TABLE matches ADD COLUMN external_id VARCHAR"))
+
+        connection.execute(
+            text("CREATE INDEX IF NOT EXISTS ix_matches_external_id ON matches (external_id)")
+        )
 
 
 # Dependency do FastAPI

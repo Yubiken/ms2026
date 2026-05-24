@@ -1,9 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.database import get_db
-from app.models import Match, Prediction
-from app.schemas.match import MatchResultUpdate
+from datetime import date
 import logging
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models import Match
+from app.schemas.match import MatchResultUpdate
+from app.services.external_results import ExternalResultsError, fetch_finished_results
+from app.services.scoring import set_final_result
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
@@ -12,7 +17,6 @@ logger = logging.getLogger(__name__)
 
 @router.put("/matches/{match_id}/result")
 def set_match_result(match_id: int, result: MatchResultUpdate, db: Session = Depends(get_db)):
-
     match = db.query(Match).filter(Match.id == match_id).first()
 
     if not match:
@@ -21,44 +25,67 @@ def set_match_result(match_id: int, result: MatchResultUpdate, db: Session = Dep
     if match.is_finished:
         raise HTTPException(status_code=400, detail="Match already finished")
 
-    # zapis wyniku
-    match.home_score = result.home_score
-    match.away_score = result.away_score
-    match.is_finished = True
-
+    predictions_updated = set_final_result(db, match, result.home_score, result.away_score)
     db.commit()
     db.refresh(match)
 
-    logger.info(f"Result set for match {match_id}")
+    logger.info("Result set for match %s; predictions updated=%s", match_id, predictions_updated)
 
-    # 🔥 PRZELICZANIE PUNKTÓW
-    predictions = db.query(Prediction).filter(Prediction.match_id == match_id).all()
+    return {"message": "Result saved and points calculated"}
 
-    for prediction in predictions:
 
-        points = 0
+@router.post("/matches/sync-results")
+def sync_match_results(
+    match_date: date | None = Query(default=None, description="Optional date filter in YYYY-MM-DD format"),
+    db: Session = Depends(get_db),
+):
+    try:
+        external_results = fetch_finished_results(match_date)
+    except ExternalResultsError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
-        # kto wygrał?
-        actual_diff = match.home_score - match.away_score
-        predicted_diff = prediction.home_score - prediction.away_score
+    updated = []
+    skipped_finished = []
+    unmatched = []
 
-        # 1 punkt za trafienie zwycięzcy / remisu
-        if (actual_diff == 0 and predicted_diff == 0) or \
-           (actual_diff > 0 and predicted_diff > 0) or \
-           (actual_diff < 0 and predicted_diff < 0):
-            points += 1
+    for external_result in external_results:
+        match = (
+            db.query(Match)
+            .filter(
+                Match.external_source == "api-football",
+                Match.external_id == external_result.external_id,
+            )
+            .first()
+        )
 
-        # +1 punkt za dokładny wynik
-        if prediction.home_score == match.home_score and \
-           prediction.away_score == match.away_score:
-            points += 1
+        if not match:
+            unmatched.append(external_result.external_id)
+            continue
 
-        prediction.points = points
+        if match.is_finished:
+            skipped_finished.append(match.id)
+            continue
 
-        logger.info(
-            f"Prediction {prediction.id} updated: user {prediction.user_id} got {points} points"
+        predictions_updated = set_final_result(
+            db,
+            match,
+            external_result.home_score,
+            external_result.away_score,
+        )
+
+        updated.append(
+            {
+                "match_id": match.id,
+                "external_id": external_result.external_id,
+                "score": f"{external_result.home_score}:{external_result.away_score}",
+                "predictions_updated": predictions_updated,
+            }
         )
 
     db.commit()
 
-    return {"message": "Result saved and points calculated"}
+    return {
+        "updated": updated,
+        "skipped_finished": skipped_finished,
+        "unmatched_external_ids": unmatched,
+    }
