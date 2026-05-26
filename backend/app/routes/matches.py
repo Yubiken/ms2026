@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Match, User
@@ -10,10 +11,6 @@ from .users import get_current_user
 
 router = APIRouter(tags=["Matches"])
 
-
-# ==============================
-# SCHEMA
-# ==============================
 
 class MatchCreate(BaseModel):
     home_team: str
@@ -25,54 +22,50 @@ class MatchCreate(BaseModel):
     external_id: str | None = None
 
 
-# ==============================
-# UTC HELPER
-# ==============================
+class MatchBulkCreate(BaseModel):
+    matches: list[MatchCreate]
+
 
 def to_utc(dt: datetime) -> datetime:
     """
     Zawsze zwracamy timezone-aware UTC datetime
     """
     if dt.tzinfo is None:
-        # jeśli frontend wysłał bez strefy → traktujemy jako UTC
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
 
 
-# ==============================
-# CREATE MATCH
-# ==============================
-
-@router.post(
-    "/matches",
-    summary="Dodaj mecz",
-    description="Tworzy nowy mecz z określoną godziną rozpoczęcia."
-)
-def create_match(
-    match: MatchCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
+def build_match(match: MatchCreate) -> Match:
     start_time = match.start_time
 
-    # Jeśli frontend nie wysłał timezone,
-    # traktujemy czas jako lokalny (Polska)
     if start_time.tzinfo is None:
         local_tz = ZoneInfo("Europe/Warsaw")
         start_time = start_time.replace(tzinfo=local_tz)
 
-    # zapis do bazy zawsze w UTC
     start_time_utc = start_time.astimezone(timezone.utc)
 
-    new_match = Match(
+    return Match(
         home_team=match.home_team,
         away_team=match.away_team,
         start_time=start_time_utc,
         stage=match.stage,
         group_name=match.group_name,
         external_source=match.external_source,
-        external_id=match.external_id
+        external_id=match.external_id,
     )
+
+
+@router.post(
+    "/matches",
+    summary="Dodaj mecz",
+    description="Tworzy nowy mecz z okreslona godzina rozpoczecia.",
+)
+def create_match(
+    match: MatchCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    new_match = build_match(match)
 
     db.add(new_match)
     db.commit()
@@ -81,20 +74,43 @@ def create_match(
     return {
         "message": "Match created",
         "match_id": new_match.id,
-        "start_time_utc": new_match.start_time
+        "start_time_utc": new_match.start_time,
     }
 
 
-# ==============================
-# GET MATCHES
-# ==============================
+@router.post(
+    "/matches/bulk",
+    summary="Dodaj mecze hurtowo",
+    description="Tworzy wiele meczow w jednej transakcji.",
+)
+def create_matches_bulk(
+    payload: MatchBulkCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if not payload.matches:
+        raise HTTPException(status_code=400, detail="No matches provided")
+
+    new_matches = [build_match(match) for match in payload.matches]
+
+    db.add_all(new_matches)
+    db.commit()
+
+    for match in new_matches:
+        db.refresh(match)
+
+    return {
+        "message": "Matches created",
+        "created_count": len(new_matches),
+        "match_ids": [match.id for match in new_matches],
+    }
+
 
 @router.get(
     "/matches",
-    summary="Lista meczów"
+    summary="Lista meczow",
 )
 def get_matches(db: Session = Depends(get_db)):
-
     matches = db.query(Match).order_by(Match.start_time.asc()).all()
 
     return [
@@ -109,26 +125,21 @@ def get_matches(db: Session = Depends(get_db)):
             "external_id": m.external_id,
             "is_finished": m.is_finished,
             "home_score": m.home_score,
-            "away_score": m.away_score
+            "away_score": m.away_score,
         }
         for m in matches
     ]
 
 
-# ==============================
-# DELETE MATCH
-# ==============================
-
 @router.delete(
     "/matches/{match_id}",
-    summary="Usuń mecz"
+    summary="Usun mecz",
 )
 def delete_match(
     match_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
 ):
-
     match = db.query(Match).filter(Match.id == match_id).first()
 
     if not match:
