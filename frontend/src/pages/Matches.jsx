@@ -59,7 +59,7 @@ export default function Matches() {
       const data = await apiRequest(`/matches/${match.id}/predictions`)
 
       if (!data) {
-        toast.error("Typy nie sa jeszcze dostepne")
+        toast.error("Typy nie są jeszcze dostępne")
         return
       }
 
@@ -74,7 +74,7 @@ export default function Matches() {
   const submitPrediction = async () => {
 
     if (homeScore === "" || awayScore === "") {
-      toast.error("Wprowadz wynik meczu")
+      toast.error("Wprowadź wynik meczu")
       return
     }
 
@@ -97,7 +97,7 @@ export default function Matches() {
 
         if (!data) return
 
-        toast.success("Twoj typ zostal zapisany")
+        toast.success("Twój typ został zapisany")
 
       } else {
 
@@ -111,7 +111,7 @@ export default function Matches() {
 
         if (!data) return
 
-        toast.success("Twoj typ zostal zaktualizowany")
+        toast.success("Twój typ został zaktualizowany")
       }
 
       setSelectedMatch(null)
@@ -173,6 +173,34 @@ export default function Matches() {
     L: "bg-rose-400",
   }
 
+  const getMatchStatus = (match, myPrediction, isStarted) => {
+    if (match.is_finished) {
+      return {
+        label: "Zakończony",
+        className: "bg-gray-500/20 text-gray-200 border-gray-400/30",
+      }
+    }
+
+    if (isStarted) {
+      return {
+        label: "Zamknięte",
+        className: "bg-red-500/15 text-red-300 border-red-400/30",
+      }
+    }
+
+    if (myPrediction) {
+      return {
+        label: "Obstawione",
+        className: "bg-orange-500/15 text-orange-300 border-orange-400/30",
+      }
+    }
+
+    return {
+      label: "Do typowania",
+      className: "bg-green-500/15 text-green-300 border-green-400/30",
+    }
+  }
+
   if (loading) {
     return <div className="p-6 text-white">Loading...</div>
   }
@@ -230,6 +258,7 @@ export default function Matches() {
 
                     const isStarted = new Date(match.start_time) <= new Date()
                     const myPrediction = myPredictions.find(p => p.match_id === match.id)
+                    const status = getMatchStatus(match, myPrediction, isStarted)
                     const predictionButtonClass = myPrediction
                       ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
                       : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white"
@@ -249,6 +278,9 @@ export default function Matches() {
                                   Grupa {match.group_name}
                                 </span>
                               )}
+                              <span className={`rounded-full border px-2.5 py-1 ${status.className}`}>
+                                {status.label}
+                              </span>
                               <span>
                                 {new Date(match.start_time).toLocaleString("pl-PL", {
                                   day: "2-digit",
@@ -267,7 +299,7 @@ export default function Matches() {
 
                             {myPrediction && (
                               <div className="text-sm text-yellow-400 mt-3 font-semibold">
-                                Twoj typ: {myPrediction.prediction_home}:{myPrediction.prediction_away}
+                                Twój typ: {myPrediction.prediction_home}:{myPrediction.prediction_away}
                               </div>
                             )}
                           </div>
@@ -365,7 +397,7 @@ export default function Matches() {
           <div className="bg-[#111827] border border-white/10 p-6 sm:p-8 rounded-3xl w-[calc(100%-2rem)] max-w-sm shadow-2xl">
 
             <h2 className="text-2xl font-bold mb-6 text-center">
-              Typy uzytkownikow
+              Typy użytkowników
             </h2>
 
             <div className="space-y-3 max-h-80 overflow-y-auto pr-2">

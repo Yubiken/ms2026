@@ -4,11 +4,11 @@ import { apiRequest } from "../api"
 
 const filters = [
   { key: "all", label: "Wszystkie" },
-  { key: "upcoming", label: "Nadchodzace" },
+  { key: "upcoming", label: "Nadchodzące" },
   { key: "live", label: "Live" },
-  { key: "finished", label: "Zakonczone" },
+  { key: "finished", label: "Zakończone" },
   { key: "scored", label: "Punktowane" },
-  { key: "zero", label: "Bez punktow" },
+  { key: "zero", label: "Bez punktów" },
 ]
 
 export default function MyPredictions() {
@@ -81,8 +81,8 @@ export default function MyPredictions() {
 
   const getStatusLabel = (status) => {
     if (status === "live") return "Live"
-    if (status === "finished") return "Zakonczony"
-    return "Nadchodzacy"
+    if (status === "finished") return "Zakończony"
+    return "Nadchodzący"
   }
 
   return (
@@ -112,7 +112,7 @@ export default function MyPredictions() {
           </div>
 
           <div className="stadium-panel rounded-2xl p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-400">Nadchodzace</div>
+            <div className="text-xs uppercase tracking-wide text-gray-400">Nadchodzące</div>
             <div className="mt-1 text-2xl font-black text-blue-300">{upcomingCount}</div>
           </div>
 
@@ -122,7 +122,7 @@ export default function MyPredictions() {
           </div>
 
           <div className="stadium-panel rounded-2xl p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-400">Dokladne</div>
+            <div className="text-xs uppercase tracking-wide text-gray-400">Dokładne</div>
             <div className="mt-1 text-2xl font-black text-yellow-300">{exactCount}/{finishedCount}</div>
           </div>
         </div>
@@ -149,20 +149,20 @@ export default function MyPredictions() {
 
         {predictions.length === 0 ? (
           <div className="stadium-panel rounded-2xl p-8 text-center">
-            <div className="text-xl font-black">Nie masz jeszcze zadnych typow</div>
+            <div className="text-xl font-black">Nie masz jeszcze żadnych typów</div>
             <div className="mt-2 text-sm text-gray-400">
-              Przejdz do listy meczow i obstaw pierwsze wyniki.
+              Przejdź do listy meczów i obstaw pierwsze wyniki.
             </div>
             <Link
               to="/matches"
               className="mt-5 inline-block rounded-full bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-2 font-bold uppercase text-white transition hover:from-green-700 hover:to-emerald-600"
             >
-              Przejdz do meczow
+              Przejdź do meczów
             </Link>
           </div>
         ) : filteredPredictions.length === 0 ? (
           <div className="stadium-panel rounded-2xl p-8 text-center text-gray-300">
-            Brak typow dla wybranego filtra.
+            Brak typów dla wybranego filtra.
           </div>
         ) : (
           <div className="space-y-6">
@@ -195,7 +195,7 @@ export default function MyPredictions() {
                     </div>
 
                     <div className="mt-3 text-sm">
-                      Twoj typ:
+                      Twój typ:
                       <span className="font-bold ml-2 text-yellow-400">
                         {p.prediction_home}:{p.prediction_away}
                       </span>
@@ -203,7 +203,7 @@ export default function MyPredictions() {
 
                     {p.is_finished && (
                       <div className="text-sm mt-2 text-gray-400">
-                        Wynik koncowy: {p.final_home_score}:{p.final_away_score}
+                        Wynik końcowy: {p.final_home_score}:{p.final_away_score}
                       </div>
                     )}
 

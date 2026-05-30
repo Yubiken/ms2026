@@ -83,7 +83,7 @@ export default function Leaderboard() {
               </div>
 
               <div className="stadium-panel rounded-2xl p-4">
-                <div className="text-xs uppercase tracking-wide text-gray-400">Srednia</div>
+                <div className="text-xs uppercase tracking-wide text-gray-400">Średnia</div>
                 <div className="mt-1 text-2xl font-black text-yellow-300">{averagePoints}</div>
               </div>
 
@@ -107,7 +107,7 @@ export default function Leaderboard() {
 
                   <div className="text-sm text-gray-300 sm:text-right">
                     {currentUserDiff === 0
-                      ? "Jestes liderem"
+                      ? "Jesteś liderem"
                       : `${currentUserDiff} pkt do lidera`}
                   </div>
                 </div>
@@ -131,7 +131,7 @@ export default function Leaderboard() {
                     {user.points}
                   </div>
                   <div className="mt-1 text-xs uppercase tracking-wide text-gray-400">
-                    punktow
+                    punktów
                   </div>
                 </div>
               ))}
