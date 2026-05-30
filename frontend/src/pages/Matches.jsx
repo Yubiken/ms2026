@@ -151,6 +151,9 @@ export default function Matches() {
 
             const isStarted = new Date(match.start_time) <= new Date()
             const myPrediction = myPredictions.find(p => p.match_id === match.id)
+            const predictionButtonClass = myPrediction
+              ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
+              : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white"
 
             return (
               <div
@@ -188,10 +191,8 @@ export default function Matches() {
                   {!isStarted ? (
                     <button
                       onClick={() => openModal(match)}
-                      className="w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm
-                                 bg-gradient-to-r from-red-600 to-red-700
-                                 hover:from-red-700 hover:to-red-800
-                                 transition shadow-lg"
+                      className={`w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm
+                                 transition shadow-lg ${predictionButtonClass}`}
                     >
                       {myPrediction ? "Edytuj" : "Typuj"}
                     </button>
@@ -199,8 +200,7 @@ export default function Matches() {
                     <button
                       onClick={() => fetchMatchPredictions(match)}
                       className="w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm
-                                 bg-gradient-to-r from-purple-600 to-purple-700
-                                 hover:from-purple-700 hover:to-purple-800
+                                 bg-gray-600 hover:bg-gray-500 text-white
                                  transition shadow-lg"
                     >
                       Zobacz typy

@@ -139,12 +139,12 @@ export default function Login({ onLogin }) {
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-3 rounded-full font-bold uppercase tracking-wider
+          className={`w-40 sm:w-44 py-3 rounded-full font-bold uppercase tracking-wider
                       transition duration-300 shadow-lg
             ${
               loading
                 ? "bg-gray-600 cursor-not-allowed"
-                : "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
+                : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600"
             }`}
         >
           {loading ? "Logowanie..." : "Zaloguj się"}
