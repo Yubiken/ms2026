@@ -40,7 +40,7 @@ export default function Navbar({ token, onLogout }) {
   }
 
   return (
-    <nav className="bg-gradient-to-r from-[#0b0f1a] via-[#111827] to-[#0b0f1a] text-white border-b border-red-600/40 shadow-xl">
+    <nav className="sticky top-0 z-40 border-b border-white/10 bg-[#070b12]/85 text-white shadow-xl backdrop-blur-xl">
 
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
 

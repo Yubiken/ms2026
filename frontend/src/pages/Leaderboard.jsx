@@ -54,40 +54,40 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0b0f1a] text-white px-4 py-8 sm:px-6 sm:py-12">
+    <div className="min-h-screen overflow-x-hidden px-4 py-8 text-white sm:px-6 sm:py-12">
 
       <div className="w-full max-w-5xl mx-auto">
 
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-black bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+          <h1 className="section-title text-3xl font-black">
             Ranking Ligi
           </h1>
           <div className="h-1 w-40 mx-auto mt-4 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full" />
         </div>
 
         {ranking.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-gray-300">
+          <div className="stadium-panel rounded-2xl p-8 text-center text-gray-300">
             Ranking jest jeszcze pusty.
           </div>
         ) : (
           <>
             <div className="grid gap-3 mb-8 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="stadium-panel rounded-2xl p-4">
                 <div className="text-xs uppercase tracking-wide text-gray-400">Lider</div>
                 <div className="mt-1 truncate text-2xl font-black">{leader.username}</div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="stadium-panel rounded-2xl p-4">
                 <div className="text-xs uppercase tracking-wide text-gray-400">Graczy</div>
                 <div className="mt-1 text-2xl font-black text-blue-300">{totalPlayers}</div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="stadium-panel rounded-2xl p-4">
                 <div className="text-xs uppercase tracking-wide text-gray-400">Srednia</div>
                 <div className="mt-1 text-2xl font-black text-yellow-300">{averagePoints}</div>
               </div>
 
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <div className="stadium-panel rounded-2xl p-4">
                 <div className="text-xs uppercase tracking-wide text-gray-400">Twoje miejsce</div>
                 <div className="mt-1 text-2xl font-black text-green-300">
                   {currentUserRank ? `#${currentUserRank.position}` : "-"}
@@ -148,7 +148,7 @@ export default function Leaderboard() {
                 return (
                   <div
                     key={user.user_id}
-                    className={`rounded-2xl border p-4 backdrop-blur-lg transition-all duration-300 sm:p-5
+                  className={`match-ticket rounded-2xl p-4 transition-all duration-300 sm:p-5
                       ${isCurrentUser
                         ? "border-green-400 bg-green-600/20 shadow-lg"
                         : "border-white/10 bg-white/5 hover:bg-white/10"

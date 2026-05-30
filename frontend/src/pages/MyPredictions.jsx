@@ -86,14 +86,14 @@ export default function MyPredictions() {
   }
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#0b0f1a] text-white px-4 py-8 sm:px-6 sm:py-10">
+    <div className="min-h-screen overflow-x-hidden px-4 py-8 text-white sm:px-6 sm:py-10">
 
       <div className="w-full max-w-6xl mx-auto">
 
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-6">
 
           <div>
-            <h1 className="text-3xl font-black bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+            <h1 className="section-title text-3xl font-black">
               Moje Typy
             </h1>
             <div className="h-1 w-32 mt-3 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full" />
@@ -106,22 +106,22 @@ export default function MyPredictions() {
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-6 lg:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="stadium-panel rounded-2xl p-4">
             <div className="text-xs uppercase tracking-wide text-gray-400">Obstawione</div>
             <div className="mt-1 text-2xl font-black">{predictions.length}</div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="stadium-panel rounded-2xl p-4">
             <div className="text-xs uppercase tracking-wide text-gray-400">Nadchodzace</div>
             <div className="mt-1 text-2xl font-black text-blue-300">{upcomingCount}</div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="stadium-panel rounded-2xl p-4">
             <div className="text-xs uppercase tracking-wide text-gray-400">Punktowane</div>
             <div className="mt-1 text-2xl font-black text-green-300">{scoredCount}</div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <div className="stadium-panel rounded-2xl p-4">
             <div className="text-xs uppercase tracking-wide text-gray-400">Dokladne</div>
             <div className="mt-1 text-2xl font-black text-yellow-300">{exactCount}/{finishedCount}</div>
           </div>
@@ -148,7 +148,7 @@ export default function MyPredictions() {
         </div>
 
         {predictions.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center">
+          <div className="stadium-panel rounded-2xl p-8 text-center">
             <div className="text-xl font-black">Nie masz jeszcze zadnych typow</div>
             <div className="mt-2 text-sm text-gray-400">
               Przejdz do listy meczow i obstaw pierwsze wyniki.
@@ -161,7 +161,7 @@ export default function MyPredictions() {
             </Link>
           </div>
         ) : filteredPredictions.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-8 text-center text-gray-300">
+          <div className="stadium-panel rounded-2xl p-8 text-center text-gray-300">
             Brak typow dla wybranego filtra.
           </div>
         ) : (
@@ -174,7 +174,7 @@ export default function MyPredictions() {
               return (
                 <div
                   key={p.id}
-                  className="bg-white/5 backdrop-blur-lg border border-white/10 rounded-2xl p-4 sm:p-6 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center hover:bg-white/10 transition duration-300"
+                  className="match-ticket rounded-2xl p-4 sm:p-6 flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center transition duration-300 hover:-translate-y-0.5"
                 >
 
                   <div className="min-w-0 w-full">

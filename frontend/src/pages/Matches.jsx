@@ -158,17 +158,32 @@ export default function Matches() {
       }, {})
   )
 
+  const groupColors = {
+    A: "bg-yellow-400",
+    B: "bg-emerald-400",
+    C: "bg-sky-400",
+    D: "bg-red-400",
+    E: "bg-violet-400",
+    F: "bg-cyan-300",
+    G: "bg-lime-400",
+    H: "bg-orange-400",
+    I: "bg-blue-400",
+    J: "bg-fuchsia-400",
+    K: "bg-teal-400",
+    L: "bg-rose-400",
+  }
+
   if (loading) {
     return <div className="p-6 text-white">Loading...</div>
   }
 
   return (
-    <div className="relative min-h-screen overflow-x-hidden bg-[#0b0f1a] text-white px-4 py-8 sm:px-6 sm:py-10">
+    <div className="relative min-h-screen overflow-x-hidden px-4 py-8 text-white sm:px-6 sm:py-10">
 
       <div className="w-full max-w-6xl mx-auto">
 
         <div className="mb-10 text-center">
-          <h1 className="text-4xl font-black bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent">
+          <h1 className="section-title text-4xl font-black">
             Mecze
           </h1>
           <div className="h-1 w-32 mx-auto mt-3 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full" />
@@ -188,7 +203,7 @@ export default function Matches() {
             return (
               <section key={dayKey} className="space-y-4">
 
-                <div className="flex flex-col gap-2 border-b border-white/10 pb-3 sm:flex-row sm:items-end sm:justify-between">
+                <div className="stadium-panel flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-end sm:justify-between">
                   <div>
                     <h2 className="text-xl font-black capitalize text-white sm:text-2xl">
                       {group.label}
@@ -222,47 +237,58 @@ export default function Matches() {
                     return (
                       <div
                         key={match.id}
-                        className="w-full bg-white/5 backdrop-blur-lg border border-white/10 p-4 sm:p-6 rounded-2xl flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center hover:bg-white/10 transition duration-300"
+                        className="match-ticket w-full rounded-2xl p-4 pl-6 transition duration-300 hover:-translate-y-0.5 sm:p-6 sm:pl-8"
                       >
-                        <div className="min-w-0 w-full">
-                          <div className="text-base sm:text-lg font-bold tracking-wide break-words">
-                            {match.home_team}
-                            <span className="mx-2 text-gray-400">vs</span>
-                            {match.away_team}
-                          </div>
+                        <span className={`group-strip ${groupColors[match.group_name] || "bg-white/40"}`} />
 
-                          <div className="text-sm text-gray-400 mt-1">
-                            {new Date(match.start_time).toLocaleString("pl-PL", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              hour: "2-digit",
-                              minute: "2-digit"
-                            })}
-                          </div>
-
-                          {myPrediction && (
-                            <div className="text-sm text-yellow-400 mt-2 font-semibold">
-                              Twoj typ: {myPrediction.prediction_home}:{myPrediction.prediction_away}
+                        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0 w-full">
+                            <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-400">
+                              {match.group_name && (
+                                <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-200">
+                                  Grupa {match.group_name}
+                                </span>
+                              )}
+                              <span>
+                                {new Date(match.start_time).toLocaleString("pl-PL", {
+                                  day: "2-digit",
+                                  month: "2-digit",
+                                  hour: "2-digit",
+                                  minute: "2-digit"
+                                })}
+                              </span>
                             </div>
-                          )}
-                        </div>
 
-                        <div className="w-full sm:w-auto sm:flex-shrink-0">
-                          {!isStarted ? (
-                            <button
-                              onClick={() => openModal(match)}
-                              className={`w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm transition shadow-lg ${predictionButtonClass}`}
-                            >
-                              {myPrediction ? "Edytuj" : "Typuj"}
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => fetchMatchPredictions(match)}
-                              className="w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm bg-gray-600 hover:bg-gray-500 text-white transition shadow-lg"
-                            >
-                              Zobacz typy
-                            </button>
-                          )}
+                            <div className="text-lg font-black tracking-wide break-words sm:text-xl">
+                              {match.home_team}
+                              <span className="mx-2 text-gray-500">vs</span>
+                              {match.away_team}
+                            </div>
+
+                            {myPrediction && (
+                              <div className="text-sm text-yellow-400 mt-3 font-semibold">
+                                Twoj typ: {myPrediction.prediction_home}:{myPrediction.prediction_away}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="w-full sm:w-auto sm:flex-shrink-0">
+                            {!isStarted ? (
+                              <button
+                                onClick={() => openModal(match)}
+                                className={`w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm transition shadow-lg ${predictionButtonClass}`}
+                              >
+                                {myPrediction ? "Edytuj" : "Typuj"}
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => fetchMatchPredictions(match)}
+                                className="w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm bg-gray-600 hover:bg-gray-500 text-white transition shadow-lg"
+                              >
+                                Zobacz typy
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                       </div>
