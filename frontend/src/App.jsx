@@ -6,6 +6,8 @@ import Register from "./pages/Register"
 import Matches from "./pages/Matches"
 import MyPredictions from "./pages/MyPredictions"
 import Leaderboard from "./pages/Leaderboard"
+import Admin from "./pages/Admin"
+import { isAdminToken } from "./admin"
 
 import Navbar from "./components/Navbar"
 
@@ -68,6 +70,11 @@ export default function App() {
         <Route
           path="/leaderboard"
           element={token ? <Leaderboard /> : <Navigate to="/login" />}
+        />
+
+        <Route
+          path="/admin"
+          element={token && isAdminToken(token) ? <Admin /> : <Navigate to={token ? "/matches" : "/login"} />}
         />
 
         {/* DEFAULT */}

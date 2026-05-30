@@ -1,11 +1,13 @@
 import { Link, useNavigate } from "react-router-dom"
 import { jwtDecode } from "jwt-decode"
 import { useState } from "react"
+import { isAdminToken } from "../admin"
 
 export default function Navbar({ token, onLogout }) {
 
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const isAdmin = isAdminToken(token)
 
   let username = null
 
@@ -70,6 +72,12 @@ export default function Navbar({ token, onLogout }) {
                 Ranking
               </Link>
 
+              {isAdmin && (
+                <Link to="/admin" className="hover:text-red-500 transition">
+                  Admin
+                </Link>
+              )}
+
               <span className="text-yellow-400 font-semibold">
                 👤 {username}
               </span>
@@ -121,6 +129,16 @@ export default function Navbar({ token, onLogout }) {
             >
               Ranking
             </Link>
+
+            {isAdmin && (
+              <Link
+                to="/admin"
+                onClick={() => setMobileOpen(false)}
+                className="hover:text-red-500"
+              >
+                Admin
+              </Link>
+            )}
 
             <div className="text-yellow-400">
               👤 {username}

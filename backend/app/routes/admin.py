@@ -1,11 +1,12 @@
 from datetime import date
 import logging
+import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Match
+from app.models import Match, User
 from app.schemas.match import MatchResultUpdate
 from app.services.external_results import (
     ExternalResultsError,
@@ -14,14 +15,37 @@ from app.services.external_results import (
     fetch_fixtures_debug,
 )
 from app.services.scoring import set_final_result
+from app.routes.users import get_current_user
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 logger = logging.getLogger(__name__)
 
 
+def get_admin_users() -> set[str]:
+    return {
+        username.strip()
+        for username in os.getenv("ADMIN_USERS", "").split(",")
+        if username.strip()
+    }
+
+
+def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    admin_users = get_admin_users()
+
+    if current_user.username not in admin_users:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    return current_user
+
+
 @router.put("/matches/{match_id}/result")
-def set_match_result(match_id: int, result: MatchResultUpdate, db: Session = Depends(get_db)):
+def set_match_result(
+    match_id: int,
+    result: MatchResultUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
     match = db.query(Match).filter(Match.id == match_id).first()
 
     if not match:
@@ -43,6 +67,7 @@ def set_match_result(match_id: int, result: MatchResultUpdate, db: Session = Dep
 def sync_match_results(
     match_date: date | None = Query(default=None, description="Optional date filter in YYYY-MM-DD format"),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
 ):
     try:
         external_results = fetch_finished_results(match_date)
@@ -100,6 +125,7 @@ def sync_match_results(
 def get_external_fixtures(
     match_date: date | None = Query(default=None, description="Optional date filter in YYYY-MM-DD format"),
     debug: bool = Query(default=False, description="Return API-Football parameters and errors"),
+    current_user: User = Depends(get_current_admin_user),
 ):
     try:
         if debug:
