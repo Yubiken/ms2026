@@ -13,24 +13,16 @@ export default function Navbar({ token, onLogout }) {
 
   if (token) {
     try {
-
       const decoded = jwtDecode(token)
-
       const now = Date.now() / 1000
 
-      // TOKEN WYGASŁ
       if (decoded.exp && decoded.exp < now) {
-
         localStorage.removeItem("token")
         onLogout()
         navigate("/login")
-
       } else {
-
         username = decoded.sub
-
       }
-
     } catch {
       username = null
     }
@@ -53,7 +45,7 @@ export default function Navbar({ token, onLogout }) {
             className="min-w-0 text-lg sm:text-2xl font-black tracking-wide"
           >
             <span className="block truncate bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
-              ⚽ Liga Typerów 2026
+              Liga Typerów 2026
             </span>
           </Link>
 
@@ -79,7 +71,7 @@ export default function Navbar({ token, onLogout }) {
               )}
 
               <span className="text-yellow-400 font-semibold">
-                👤 {username}
+                {username}
               </span>
 
               <button
@@ -96,6 +88,7 @@ export default function Navbar({ token, onLogout }) {
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
               className="md:hidden flex-shrink-0 text-2xl"
+              aria-label="Otwórz menu"
             >
               ☰
             </button>
@@ -141,7 +134,7 @@ export default function Navbar({ token, onLogout }) {
             )}
 
             <div className="text-yellow-400">
-              👤 {username}
+              {username}
             </div>
 
             <button

@@ -332,21 +332,21 @@ export default function Matches() {
               return (
                 <section key={dayKey} className="space-y-4">
 
-                  <div className="stadium-panel flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-end sm:justify-between">
+                  <div className="relative overflow-hidden rounded-xl border border-orange-400/20 bg-gradient-to-r from-orange-500/20 via-yellow-500/10 to-white/[0.03] px-4 py-3 shadow-lg sm:flex sm:items-center sm:justify-between">
                     <div>
                       <h2 className="text-xl font-black capitalize text-white sm:text-2xl">
                         {group.label}
                       </h2>
-                      <div className="mt-1 h-1 w-20 rounded-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500" />
+                      <div className="mt-2 h-1 w-24 rounded-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500" />
                     </div>
 
-                    <div className="flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide">
-                      <span className="rounded-full bg-white/10 px-3 py-1 text-gray-300">
+                    <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide sm:mt-0">
+                      <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-gray-200">
                         {group.matches.length} {group.matches.length === 1 ? "mecz" : "mecze"}
                       </span>
 
                       {missingPredictions > 0 && (
-                        <span className="rounded-full bg-green-500/15 px-3 py-1 text-green-300">
+                        <span className="rounded-full border border-green-400/20 bg-green-500/15 px-3 py-1 text-green-300">
                           {missingPredictions} do typowania
                         </span>
                       )}
