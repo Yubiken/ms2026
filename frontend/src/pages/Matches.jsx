@@ -127,9 +127,9 @@ export default function Matches() {
   }
 
   return (
-    <div className="relative min-h-screen bg-[#0b0f1a] text-white px-6 py-10">
+    <div className="relative min-h-screen overflow-x-hidden bg-[#0b0f1a] text-white px-4 py-8 sm:px-6 sm:py-10">
 
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
+      <div className="w-full max-w-6xl mx-auto">
 
         {/* HEADER */}
         <div className="mb-10 text-center">
@@ -155,14 +155,14 @@ export default function Matches() {
             return (
               <div
                 key={match.id}
-                className="bg-white/5 backdrop-blur-lg 
+                className="w-full bg-white/5 backdrop-blur-lg 
                            border border-white/10 
-                           p-6 rounded-2xl 
-                           flex justify-between items-center 
+                           p-4 sm:p-6 rounded-2xl 
+                           flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center
                            hover:bg-white/10 transition duration-300"
               >
-                <div>
-                  <div className="text-lg font-bold tracking-wide">
+                <div className="min-w-0 w-full">
+                  <div className="text-base sm:text-lg font-bold tracking-wide break-words">
                     {match.home_team}
                     <span className="mx-2 text-gray-400">vs</span>
                     {match.away_team}
@@ -184,11 +184,11 @@ export default function Matches() {
                   )}
                 </div>
 
-                <div>
+                <div className="w-full sm:w-auto sm:flex-shrink-0">
                   {!isStarted ? (
                     <button
                       onClick={() => openModal(match)}
-                      className="px-5 py-2 rounded-full font-bold uppercase text-sm
+                      className="w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm
                                  bg-gradient-to-r from-red-600 to-red-700
                                  hover:from-red-700 hover:to-red-800
                                  transition shadow-lg"
@@ -198,7 +198,7 @@ export default function Matches() {
                   ) : (
                     <button
                       onClick={() => fetchMatchPredictions(match)}
-                      className="px-5 py-2 rounded-full font-bold uppercase text-sm
+                      className="w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm
                                  bg-gradient-to-r from-purple-600 to-purple-700
                                  hover:from-purple-700 hover:to-purple-800
                                  transition shadow-lg"
@@ -220,7 +220,7 @@ export default function Matches() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
 
           <div className="bg-[#111827] border border-white/10 
-                          p-8 rounded-3xl w-96 shadow-2xl text-center">
+                          p-6 sm:p-8 rounded-3xl w-[calc(100%-2rem)] max-w-sm shadow-2xl text-center">
 
             <h2 className="text-2xl font-bold mb-6">
               {selectedMatch.home_team} vs {selectedMatch.away_team}
@@ -281,7 +281,7 @@ export default function Matches() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
 
           <div className="bg-[#111827] border border-white/10 
-                          p-8 rounded-3xl w-96 shadow-2xl">
+                          p-6 sm:p-8 rounded-3xl w-[calc(100%-2rem)] max-w-sm shadow-2xl">
 
             <h2 className="text-2xl font-bold mb-6 text-center">
               Typy użytkowników

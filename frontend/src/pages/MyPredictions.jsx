@@ -53,9 +53,9 @@ export default function MyPredictions() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0b0f1a] text-white px-6 py-10">
+    <div className="min-h-screen overflow-x-hidden bg-[#0b0f1a] text-white px-4 py-8 sm:px-6 sm:py-10">
 
-      <div className="max-w-6xl mx-auto">
+      <div className="w-full max-w-6xl mx-auto">
 
         {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-10 gap-6">
@@ -92,14 +92,14 @@ export default function MyPredictions() {
                 key={p.id}
                 className="bg-white/5 backdrop-blur-lg 
                            border border-white/10 
-                           rounded-2xl p-6 
-                           flex justify-between items-center
+                           rounded-2xl p-4 sm:p-6 
+                           flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center
                            hover:bg-white/10 transition duration-300"
               >
 
-                <div>
+                <div className="min-w-0 w-full">
 
-                  <div className="text-lg font-bold tracking-wide">
+                  <div className="text-base sm:text-lg font-bold tracking-wide break-words">
                     {p.home_team}
                     <span className="mx-2 text-gray-400">vs</span>
                     {p.away_team}
@@ -129,7 +129,7 @@ export default function MyPredictions() {
 
                 </div>
 
-                <div className="text-right">
+                <div className="w-full text-left sm:w-auto sm:flex-shrink-0 sm:text-right">
 
                   <div className={`inline-block px-3 py-1 rounded-full text-xs font-bold mb-3 ${getStatusBadge(status)}`}>
                     {status}

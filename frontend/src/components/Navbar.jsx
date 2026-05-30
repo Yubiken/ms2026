@@ -44,13 +44,13 @@ export default function Navbar({ token, onLogout }) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-4">
 
           <Link
             to="/matches"
-            className="text-lg sm:text-2xl font-black tracking-wide"
+            className="min-w-0 text-lg sm:text-2xl font-black tracking-wide"
           >
-            <span className="bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
+            <span className="block truncate bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
               ⚽ Liga Typerów 2026
             </span>
           </Link>
@@ -87,7 +87,7 @@ export default function Navbar({ token, onLogout }) {
           {token && (
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden text-2xl"
+              className="md:hidden flex-shrink-0 text-2xl"
             >
               ☰
             </button>
