@@ -37,10 +37,18 @@ export default function Admin() {
     }))
   }
 
-  const saveResult = async (match) => {
+  const getScoreValue = (match, side) => {
     const score = scores[match.id] || {}
 
-    if (score.home_score === "" || score.away_score === "" || score.home_score == null || score.away_score == null) {
+    if (score[side] != null) return score[side]
+    return match[side] ?? ""
+  }
+
+  const saveResult = async (match) => {
+    const homeScore = getScoreValue(match, "home_score")
+    const awayScore = getScoreValue(match, "away_score")
+
+    if (homeScore === "" || awayScore === "" || homeScore == null || awayScore == null) {
       toast.error("Wpisz wynik meczu")
       return
     }
@@ -49,14 +57,14 @@ export default function Admin() {
       const data = await apiRequest(`/admin/matches/${match.id}/result`, {
         method: "PUT",
         body: JSON.stringify({
-          home_score: Number(score.home_score),
-          away_score: Number(score.away_score),
+          home_score: Number(homeScore),
+          away_score: Number(awayScore),
         }),
       })
 
       if (!data) return
 
-      toast.success("Wynik zapisany")
+      toast.success(match.is_finished ? "Wynik poprawiony" : "Wynik zapisany")
       setScores(current => {
         const next = { ...current }
         delete next[match.id]
@@ -119,84 +127,82 @@ export default function Admin() {
           </div>
         ) : (
           <div className="grid gap-4">
-            {visibleMatches.map(match => {
-              const score = scores[match.id] || {}
-
-              return (
-                <div
-                  key={match.id}
-                  className="match-ticket rounded-2xl p-4 sm:p-5"
-                >
-                  <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="min-w-0">
-                      <div className="mb-2 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide text-gray-400">
-                        {match.group_name && (
-                          <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-200">
-                            Grupa {match.group_name}
-                          </span>
-                        )}
-                        <span>
-                          {new Date(match.start_time).toLocaleString("pl-PL", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
+            {visibleMatches.map(match => (
+              <div
+                key={match.id}
+                className="match-ticket rounded-2xl p-4 sm:p-5"
+              >
+                <div className="relative z-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="min-w-0">
+                    <div className="mb-2 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide text-gray-400">
+                      {match.group_name && (
+                        <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-200">
+                          Grupa {match.group_name}
                         </span>
-                        {match.is_finished && (
-                          <span className="rounded-full border border-gray-400/30 bg-gray-500/20 px-2.5 py-1 text-gray-200">
-                            Zakończony
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="text-lg font-black sm:text-xl">
-                        {match.home_team}
-                        <span className="mx-2 text-gray-500">vs</span>
-                        {match.away_team}
-                      </div>
-
+                      )}
+                      <span>
+                        {new Date(match.start_time).toLocaleString("pl-PL", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
                       {match.is_finished && (
-                        <div className="mt-2 text-sm text-yellow-400">
-                          Wynik: {match.home_score}:{match.away_score}
-                        </div>
+                        <span className="rounded-full border border-gray-400/30 bg-gray-500/20 px-2.5 py-1 text-gray-200">
+                          Zakończony
+                        </span>
                       )}
                     </div>
 
-                    {!match.is_finished && (
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                        <div className="flex items-center justify-center gap-3">
-                          <input
-                            type="number"
-                            min="0"
-                            max="20"
-                            value={score.home_score ?? ""}
-                            onChange={(event) => updateScore(match.id, "home_score", event.target.value)}
-                            className="w-20 rounded-xl border border-white/20 bg-white/10 p-3 text-center text-white outline-none focus:border-green-500"
-                          />
-                          <span className="text-2xl font-black">:</span>
-                          <input
-                            type="number"
-                            min="0"
-                            max="20"
-                            value={score.away_score ?? ""}
-                            onChange={(event) => updateScore(match.id, "away_score", event.target.value)}
-                            className="w-20 rounded-xl border border-white/20 bg-white/10 p-3 text-center text-white outline-none focus:border-green-500"
-                          />
-                        </div>
+                    <div className="text-lg font-black sm:text-xl">
+                      {match.home_team}
+                      <span className="mx-2 text-gray-500">vs</span>
+                      {match.away_team}
+                    </div>
 
-                        <button
-                          onClick={() => saveResult(match)}
-                          className="rounded-full bg-gradient-to-r from-green-600 to-emerald-500 px-5 py-2 text-sm font-bold uppercase text-white shadow-lg transition hover:from-green-700 hover:to-emerald-600"
-                        >
-                          Zapisz wynik
-                        </button>
+                    {match.is_finished && (
+                      <div className="mt-2 text-sm text-yellow-400">
+                        Aktualny wynik: {match.home_score}:{match.away_score}
                       </div>
                     )}
                   </div>
+
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div className="flex items-center justify-center gap-3">
+                      <input
+                        type="number"
+                        min="0"
+                        max="20"
+                        value={getScoreValue(match, "home_score")}
+                        onChange={(event) => updateScore(match.id, "home_score", event.target.value)}
+                        className="w-20 rounded-xl border border-white/20 bg-white/10 p-3 text-center text-white outline-none focus:border-green-500"
+                      />
+                      <span className="text-2xl font-black">:</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="20"
+                        value={getScoreValue(match, "away_score")}
+                        onChange={(event) => updateScore(match.id, "away_score", event.target.value)}
+                        className="w-20 rounded-xl border border-white/20 bg-white/10 p-3 text-center text-white outline-none focus:border-green-500"
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => saveResult(match)}
+                      className={`rounded-full px-5 py-2 text-sm font-bold uppercase text-white shadow-lg transition ${
+                        match.is_finished
+                          ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+                          : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600"
+                      }`}
+                    >
+                      {match.is_finished ? "Popraw wynik" : "Zapisz wynik"}
+                    </button>
+                  </div>
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         )}
       </div>

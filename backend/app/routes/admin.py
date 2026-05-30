@@ -51,16 +51,24 @@ def set_match_result(
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
 
-    if match.is_finished:
-        raise HTTPException(status_code=400, detail="Match already finished")
-
+    was_finished = match.is_finished
     predictions_updated = set_final_result(db, match, result.home_score, result.away_score)
     db.commit()
     db.refresh(match)
 
-    logger.info("Result set for match %s; predictions updated=%s", match_id, predictions_updated)
+    logger.info(
+        "Result %s for match %s by %s; predictions updated=%s",
+        "corrected" if was_finished else "set",
+        match_id,
+        current_user.username,
+        predictions_updated,
+    )
 
-    return {"message": "Result saved and points calculated"}
+    return {
+        "message": "Result corrected and points recalculated" if was_finished else "Result saved and points calculated",
+        "was_correction": was_finished,
+        "predictions_updated": predictions_updated,
+    }
 
 
 @router.post("/matches/sync-results")
