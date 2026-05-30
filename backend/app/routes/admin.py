@@ -14,7 +14,7 @@ from app.services.external_results import (
     fetch_fixtures,
     fetch_fixtures_debug,
 )
-from app.services.scoring import set_final_result
+from app.services.scoring import clear_final_result, set_final_result
 from app.routes.users import get_current_user
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
@@ -67,6 +67,34 @@ def set_match_result(
     return {
         "message": "Result corrected and points recalculated" if was_finished else "Result saved and points calculated",
         "was_correction": was_finished,
+        "predictions_updated": predictions_updated,
+    }
+
+
+@router.delete("/matches/{match_id}/result")
+def clear_match_result(
+    match_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    match = db.query(Match).filter(Match.id == match_id).first()
+
+    if not match:
+        raise HTTPException(status_code=404, detail="Match not found")
+
+    predictions_updated = clear_final_result(db, match)
+    db.commit()
+    db.refresh(match)
+
+    logger.info(
+        "Result cleared for match %s by %s; predictions reset=%s",
+        match_id,
+        current_user.username,
+        predictions_updated,
+    )
+
+    return {
+        "message": "Result cleared and prediction points reset",
         "predictions_updated": predictions_updated,
     }
 

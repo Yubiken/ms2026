@@ -206,6 +206,12 @@ export default function Matches() {
     return statusMatch && groupMatch
   })
 
+  const statusCounts = matches.reduce((counts, match) => {
+    const state = getMatchState(match)
+    counts[state] = (counts[state] || 0) + 1
+    return counts
+  }, {})
+
   const matchGroups = Object.entries(
     filteredMatches
       .slice()
@@ -240,6 +246,28 @@ export default function Matches() {
             Mecze
           </h1>
           <div className="h-1 w-32 mx-auto mt-3 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full" />
+        </div>
+
+        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <div className="stadium-panel rounded-2xl p-4">
+            <div className="text-xs uppercase tracking-wide text-gray-400">Do typowania</div>
+            <div className="mt-1 text-2xl font-black text-green-300">{statusCounts.todo || 0}</div>
+          </div>
+
+          <div className="stadium-panel rounded-2xl p-4">
+            <div className="text-xs uppercase tracking-wide text-gray-400">Obstawione</div>
+            <div className="mt-1 text-2xl font-black text-orange-300">{statusCounts.predicted || 0}</div>
+          </div>
+
+          <div className="stadium-panel rounded-2xl p-4">
+            <div className="text-xs uppercase tracking-wide text-gray-400">Zamknięte</div>
+            <div className="mt-1 text-2xl font-black text-red-300">{statusCounts.locked || 0}</div>
+          </div>
+
+          <div className="stadium-panel rounded-2xl p-4">
+            <div className="text-xs uppercase tracking-wide text-gray-400">Zakończone</div>
+            <div className="mt-1 text-2xl font-black text-gray-200">{statusCounts.finished || 0}</div>
+          </div>
         </div>
 
         <div className="stadium-panel mb-8 rounded-2xl p-4">

@@ -31,3 +31,16 @@ def set_final_result(db: Session, match: Match, home_score: int, away_score: int
         prediction.points = calculate_points(prediction, match)
 
     return len(predictions)
+
+
+def clear_final_result(db: Session, match: Match) -> int:
+    match.home_score = None
+    match.away_score = None
+    match.is_finished = False
+
+    predictions = db.query(Prediction).filter(Prediction.match_id == match.id).all()
+
+    for prediction in predictions:
+        prediction.points = 0
+
+    return len(predictions)

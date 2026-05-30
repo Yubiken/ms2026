@@ -76,6 +76,30 @@ export default function Admin() {
     }
   }
 
+  const clearResult = async (match) => {
+    const confirmed = window.confirm(`Cofnąć wynik meczu ${match.home_team} vs ${match.away_team}? Punkty za ten mecz zostaną wyzerowane.`)
+
+    if (!confirmed) return
+
+    try {
+      const data = await apiRequest(`/admin/matches/${match.id}/result`, {
+        method: "DELETE",
+      })
+
+      if (!data) return
+
+      toast.success("Wynik cofnięty")
+      setScores(current => {
+        const next = { ...current }
+        delete next[match.id]
+        return next
+      })
+      fetchMatches()
+    } catch {
+      toast.error("Nie udało się cofnąć wyniku")
+    }
+  }
+
   const visibleMatches = matches
     .filter(match => {
       if (filter === "finished") return match.is_finished
@@ -199,6 +223,15 @@ export default function Admin() {
                     >
                       {match.is_finished ? "Popraw wynik" : "Zapisz wynik"}
                     </button>
+
+                    {match.is_finished && (
+                      <button
+                        onClick={() => clearResult(match)}
+                        className="rounded-full bg-gray-700 px-5 py-2 text-sm font-bold uppercase text-white shadow-lg transition hover:bg-gray-600"
+                      >
+                        Cofnij wynik
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
