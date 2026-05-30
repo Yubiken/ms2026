@@ -38,7 +38,6 @@ export default function Leaderboard() {
   const totalPoints = ranking.reduce((sum, user) => sum + Number(user.points ?? 0), 0)
   const averagePoints = totalPlayers > 0 ? (totalPoints / totalPlayers).toFixed(1) : "0.0"
   const currentUserRank = ranking.find(user => user.username === currentUser)
-  const currentUserDiff = currentUserRank ? leaderPoints - currentUserRank.points : 0
 
   const getMedal = (position) => {
     if (position === 1) return "1"
@@ -94,25 +93,6 @@ export default function Leaderboard() {
                 </div>
               </div>
             </div>
-
-            {currentUserRank && (
-              <div className="mb-8 rounded-2xl border border-green-400/60 bg-green-600/15 p-4 sm:p-5">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <div className="text-sm uppercase tracking-wide text-green-300">Twoja sytuacja</div>
-                    <div className="mt-1 text-lg font-black">
-                      #{currentUserRank.position} · {currentUserRank.points} pkt
-                    </div>
-                  </div>
-
-                  <div className="text-sm text-gray-300 sm:text-right">
-                    {currentUserDiff === 0
-                      ? "Jesteś liderem"
-                      : `${currentUserDiff} pkt do lidera`}
-                  </div>
-                </div>
-              </div>
-            )}
 
             <div className="grid gap-4 mb-10 md:grid-cols-3">
 
