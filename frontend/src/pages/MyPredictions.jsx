@@ -71,6 +71,21 @@ export default function MyPredictions() {
     return "text-red-400"
   }
 
+  const getPointsLabel = (prediction) => {
+    const points = Number(prediction.points ?? 0)
+
+    if (!prediction.is_finished) return null
+    if (points === 2) return "Dokładny wynik"
+    if (points === 1) return "Trafiony zwycięzca/remis"
+    return "Nietrafiony"
+  }
+
+  const getPointsLabelClass = (points) => {
+    if (points === 2) return "bg-green-500/15 text-green-300 border-green-400/30"
+    if (points === 1) return "bg-yellow-500/15 text-yellow-300 border-yellow-400/30"
+    return "bg-red-500/15 text-red-300 border-red-400/30"
+  }
+
   const getStatusBadge = (status) => {
     if (status === "live")
       return "bg-red-600 text-white animate-pulse"
@@ -100,7 +115,7 @@ export default function MyPredictions() {
           </div>
 
           <div className="bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-black px-8 py-4 rounded-2xl shadow-xl text-2xl font-black tracking-wide">
-            {totalPoints} pts
+            {totalPoints} pkt
           </div>
 
         </div>
@@ -170,6 +185,8 @@ export default function MyPredictions() {
             {filteredPredictions.map(p => {
 
               const status = getMatchStatus(p)
+              const points = Number(p.points ?? 0)
+              const pointsLabel = getPointsLabel(p)
 
               return (
                 <div
@@ -207,6 +224,12 @@ export default function MyPredictions() {
                       </div>
                     )}
 
+                    {pointsLabel && (
+                      <div className={`mt-3 inline-block rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide ${getPointsLabelClass(points)}`}>
+                        {pointsLabel}
+                      </div>
+                    )}
+
                   </div>
 
                   <div className="w-full text-left sm:w-auto sm:flex-shrink-0 sm:text-right">
@@ -216,8 +239,8 @@ export default function MyPredictions() {
                     </div>
 
                     {p.is_finished ? (
-                      <div className={`text-3xl font-black ${getPointsColor(Number(p.points))}`}>
-                        {p.points} pts
+                      <div className={`text-3xl font-black ${getPointsColor(points)}`}>
+                        {p.points} pkt
                       </div>
                     ) : (
                       <div className="text-gray-500 text-xl">
