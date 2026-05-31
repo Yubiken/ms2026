@@ -62,7 +62,7 @@ function NavIcon({ type }) {
   )
 }
 
-export default function Navbar({ token, onLogout }) {
+export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 }) {
 
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -88,7 +88,14 @@ export default function Navbar({ token, onLogout }) {
   }
 
   const mobileNavItems = [
-    { to: "/matches", label: "Mecze", icon: "matches" },
+    {
+      to: "/matches",
+      label: "Mecze",
+      icon: "matches",
+      badge: pendingPredictionsCount > 0
+        ? pendingPredictionsCount > 9 ? "9+" : pendingPredictionsCount
+        : null,
+    },
     { to: "/my-predictions", label: "Moje typy", icon: "predictions" },
     { to: "/leaderboard", label: "Ranking", icon: "ranking" },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: "admin" }] : []),
@@ -198,7 +205,14 @@ export default function Navbar({ token, onLogout }) {
                     : "text-gray-400 hover:bg-white/10 hover:text-white"
                 }`}
               >
-                <NavIcon type={item.icon} />
+                <span className="relative">
+                  <NavIcon type={item.icon} />
+                  {item.badge && (
+                    <span className="absolute -right-3 -top-2 flex h-5 min-w-5 items-center justify-center rounded-full border border-[#070b12] bg-green-400 px-1 text-[10px] font-black leading-none text-black shadow-lg shadow-green-500/25">
+                      {item.badge}
+                    </span>
+                  )}
+                </span>
                 <span className="max-w-full truncate">
                   {item.label}
                 </span>

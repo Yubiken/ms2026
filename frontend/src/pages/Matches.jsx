@@ -80,7 +80,7 @@ function ScoreControl({ label, value, onChange }) {
   )
 }
 
-export default function Matches() {
+export default function Matches({ onPredictionsChange }) {
 
   const [matches, setMatches] = useState([])
   const [myPredictions, setMyPredictions] = useState([])
@@ -204,7 +204,8 @@ export default function Matches() {
       }
 
       setSelectedMatch(null)
-      fetchData()
+      await fetchData()
+      onPredictionsChange?.()
 
     } catch {
       toast.error("Błąd serwera")
