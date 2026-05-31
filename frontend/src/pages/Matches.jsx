@@ -295,6 +295,18 @@ export default function Matches() {
     return counts
   }, {})
 
+  const sortedMatches = matches
+    .slice()
+    .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+
+  const now = new Date()
+  const todayKey = getDayKey(now)
+  const nextMatch = sortedMatches.find(match => !match.is_finished && new Date(match.start_time) > now)
+  const nextMatchPrediction = nextMatch
+    ? myPredictions.find(prediction => prediction.match_id === nextMatch.id)
+    : null
+  const todayMatchesCount = matches.filter(match => getDayKey(new Date(match.start_time)) === todayKey).length
+
   const matchGroups = Object.entries(
     filteredMatches
       .slice()
@@ -331,25 +343,82 @@ export default function Matches() {
           <div className="h-1 w-32 mx-auto mt-3 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full" />
         </div>
 
-        <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="mb-6 grid gap-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+          <div className="stadium-panel relative overflow-hidden rounded-2xl p-5">
+            <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
+                <div className="text-xs font-bold uppercase tracking-wide text-green-300">
+                  Najbliższy mecz
+                </div>
+
+                {nextMatch ? (
+                  <>
+                    <div className="mt-2 break-words text-2xl font-black leading-tight">
+                      {nextMatch.home_team}
+                      <span className="mx-2 text-gray-500">vs</span>
+                      {nextMatch.away_team}
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-300">
+                      {nextMatch.group_name && (
+                        <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-gray-200">
+                          Grupa {nextMatch.group_name}
+                        </span>
+                      )}
+                      <span>
+                        {new Date(nextMatch.start_time).toLocaleString("pl-PL", {
+                          day: "2-digit",
+                          month: "2-digit",
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </span>
+                      {nextMatchPrediction && (
+                        <span className="rounded-full border border-yellow-400/25 bg-yellow-500/15 px-2.5 py-1 text-xs font-bold text-yellow-300">
+                          Twój typ: {nextMatchPrediction.prediction_home}:{nextMatchPrediction.prediction_away}
+                        </span>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-3 text-base font-semibold text-gray-300">
+                    Brak nadchodzących meczów.
+                  </div>
+                )}
+              </div>
+
+              {nextMatch && (
+                <button
+                  type="button"
+                  onClick={() => openModal(nextMatch)}
+                  className={`w-full flex-shrink-0 rounded-full px-5 py-3 text-sm font-bold uppercase shadow-lg transition sm:w-auto ${
+                    nextMatchPrediction
+                      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600"
+                      : "bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:from-green-700 hover:to-emerald-600"
+                  }`}
+                >
+                  {nextMatchPrediction ? "Edytuj" : "Typuj"}
+                </button>
+              )}
+            </div>
+          </div>
+
           <div className="stadium-panel rounded-2xl p-4">
             <div className="text-xs uppercase tracking-wide text-gray-400">Do typowania</div>
-            <div className="mt-1 text-2xl font-black text-green-300">{statusCounts.todo || 0}</div>
+            <div className="mt-1 text-3xl font-black text-green-300">{statusCounts.todo || 0}</div>
+            <div className="mt-2 text-xs font-semibold text-gray-500">jeszcze przed startem</div>
+          </div>
+
+          <div className="stadium-panel rounded-2xl p-4">
+            <div className="text-xs uppercase tracking-wide text-gray-400">Dzisiaj</div>
+            <div className="mt-1 text-3xl font-black text-yellow-300">{todayMatchesCount}</div>
+            <div className="mt-2 text-xs font-semibold text-gray-500">mecze w kalendarzu</div>
           </div>
 
           <div className="stadium-panel rounded-2xl p-4">
             <div className="text-xs uppercase tracking-wide text-gray-400">Obstawione</div>
-            <div className="mt-1 text-2xl font-black text-orange-300">{statusCounts.predicted || 0}</div>
-          </div>
-
-          <div className="stadium-panel rounded-2xl p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-400">Zamknięte</div>
-            <div className="mt-1 text-2xl font-black text-red-300">{statusCounts.locked || 0}</div>
-          </div>
-
-          <div className="stadium-panel rounded-2xl p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-400">Zakończone</div>
-            <div className="mt-1 text-2xl font-black text-gray-200">{statusCounts.finished || 0}</div>
+            <div className="mt-1 text-3xl font-black text-orange-300">{statusCounts.predicted || 0}</div>
+            <div className="mt-2 text-xs font-semibold text-gray-500">aktywne typy</div>
           </div>
         </div>
 
