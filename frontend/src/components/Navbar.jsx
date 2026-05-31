@@ -1,7 +1,66 @@
-import { Link, useNavigate } from "react-router-dom"
+import { Link, NavLink, useNavigate } from "react-router-dom"
 import { jwtDecode } from "jwt-decode"
 import { useState } from "react"
 import { isAdminToken } from "../admin"
+
+function NavIcon({ type }) {
+  const sharedProps = {
+    width: "22",
+    height: "22",
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "2",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": "true",
+  }
+
+  if (type === "predictions") {
+    return (
+      <svg {...sharedProps}>
+        <path d="M12 3v18" />
+        <path d="M7 8h10" />
+        <path d="M7 16h10" />
+        <path d="M5 5h14" />
+        <path d="M5 19h14" />
+      </svg>
+    )
+  }
+
+  if (type === "ranking") {
+    return (
+      <svg {...sharedProps}>
+        <path d="M8 21h8" />
+        <path d="M12 17v4" />
+        <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+        <path d="M7 7H4a3 3 0 0 0 3 3" />
+        <path d="M17 7h3a3 3 0 0 1-3 3" />
+      </svg>
+    )
+  }
+
+  if (type === "admin") {
+    return (
+      <svg {...sharedProps}>
+        <path d="M12 3l7 3v5c0 4.5-2.8 8.6-7 10-4.2-1.4-7-5.5-7-10V6l7-3Z" />
+        <path d="M9 12h6" />
+        <path d="M12 9v6" />
+      </svg>
+    )
+  }
+
+  return (
+    <svg {...sharedProps}>
+      <path d="M7 3v4" />
+      <path d="M17 3v4" />
+      <path d="M4 9h16" />
+      <path d="M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z" />
+      <path d="M8 13h3" />
+      <path d="M13 16h3" />
+    </svg>
+  )
+}
 
 export default function Navbar({ token, onLogout }) {
 
@@ -28,55 +87,93 @@ export default function Navbar({ token, onLogout }) {
     }
   }
 
+  const mobileNavItems = [
+    { to: "/matches", label: "Mecze", icon: "matches" },
+    { to: "/my-predictions", label: "Moje typy", icon: "predictions" },
+    { to: "/leaderboard", label: "Ranking", icon: "ranking" },
+    ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: "admin" }] : []),
+  ]
+
   const handleLogout = () => {
+    setMobileOpen(false)
     onLogout()
     navigate("/login")
   }
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-white/10 bg-[#070b12]/85 text-white shadow-xl backdrop-blur-xl">
+    <>
+      <nav className="sticky top-0 z-40 border-b border-white/10 bg-[#070b12]/85 text-white shadow-xl backdrop-blur-xl">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-8 py-4">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-8">
 
-        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center justify-between gap-4">
 
-          <Link
-            to="/matches"
-            className="min-w-0 text-lg sm:text-2xl font-black tracking-wide"
-          >
-            <span className="block truncate bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
-              Liga Typerów 2026
-            </span>
-          </Link>
-
-          {token && (
-            <div className="hidden md:flex items-center gap-8 text-sm uppercase tracking-widest font-semibold">
-
-              <Link to="/matches" className="hover:text-red-500 transition">
-                Mecze
-              </Link>
-
-              <Link to="/my-predictions" className="hover:text-red-500 transition">
-                Moje Typy
-              </Link>
-
-              <Link to="/leaderboard" className="hover:text-red-500 transition">
-                Ranking
-              </Link>
-
-              {isAdmin && (
-                <Link to="/admin" className="hover:text-red-500 transition">
-                  Admin
-                </Link>
-              )}
-
-              <span className="text-yellow-400 font-semibold">
-                {username}
+            <Link
+              to="/matches"
+              className="min-w-0 text-lg font-black tracking-wide sm:text-2xl"
+            >
+              <span className="block truncate bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
+                Liga Typerów 2026
               </span>
+            </Link>
+
+            {token && (
+              <div className="hidden items-center gap-8 text-sm font-semibold uppercase tracking-widest md:flex">
+
+                <Link to="/matches" className="transition hover:text-red-500">
+                  Mecze
+                </Link>
+
+                <Link to="/my-predictions" className="transition hover:text-red-500">
+                  Moje Typy
+                </Link>
+
+                <Link to="/leaderboard" className="transition hover:text-red-500">
+                  Ranking
+                </Link>
+
+                {isAdmin && (
+                  <Link to="/admin" className="transition hover:text-red-500">
+                    Admin
+                  </Link>
+                )}
+
+                <span className="font-semibold text-yellow-400">
+                  {username}
+                </span>
+
+                <button
+                  onClick={handleLogout}
+                  className="rounded-full bg-gradient-to-r from-red-600 to-red-700 px-4 py-2 text-sm font-bold transition hover:from-red-700 hover:to-red-800"
+                >
+                  Wyloguj
+                </button>
+
+              </div>
+            )}
+
+            {token && (
+              <button
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="flex-shrink-0 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-bold uppercase tracking-wide transition hover:bg-white/15 md:hidden"
+                aria-label="Otwórz menu konta"
+              >
+                Konto
+              </button>
+            )}
+
+          </div>
+
+          {mobileOpen && token && (
+            <div className="mt-4 flex flex-col gap-4 border-t border-white/10 pt-4 text-sm font-semibold uppercase tracking-widest md:hidden">
+
+              <div className="text-yellow-400">
+                {username}
+              </div>
 
               <button
                 onClick={handleLogout}
-                className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 transition px-4 py-2 rounded-full text-sm font-bold"
+                className="rounded-full bg-gradient-to-r from-red-600 to-red-700 px-4 py-2 font-bold"
               >
                 Wyloguj
               </button>
@@ -84,70 +181,32 @@ export default function Navbar({ token, onLogout }) {
             </div>
           )}
 
-          {token && (
-            <button
-              onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden flex-shrink-0 text-2xl"
-              aria-label="Otwórz menu"
-            >
-              ☰
-            </button>
-          )}
-
         </div>
+      </nav>
 
-        {mobileOpen && token && (
-          <div className="md:hidden mt-4 flex flex-col gap-4 text-sm uppercase tracking-widest font-semibold border-t border-white/10 pt-4">
-
-            <Link
-              to="/matches"
-              onClick={() => setMobileOpen(false)}
-              className="hover:text-red-500"
-            >
-              Mecze
-            </Link>
-
-            <Link
-              to="/my-predictions"
-              onClick={() => setMobileOpen(false)}
-              className="hover:text-red-500"
-            >
-              Moje Typy
-            </Link>
-
-            <Link
-              to="/leaderboard"
-              onClick={() => setMobileOpen(false)}
-              className="hover:text-red-500"
-            >
-              Ranking
-            </Link>
-
-            {isAdmin && (
-              <Link
-                to="/admin"
+      {token && (
+        <nav className="fixed inset-x-3 bottom-3 z-40 rounded-3xl border border-white/10 bg-[#070b12]/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-white shadow-2xl shadow-black/50 backdrop-blur-xl md:hidden">
+          <div className={`grid gap-1 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}>
+            {mobileNavItems.map(item => (
+              <NavLink
+                key={item.to}
+                to={item.to}
                 onClick={() => setMobileOpen(false)}
-                className="hover:text-red-500"
+                className={({ isActive }) => `flex min-w-0 flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 text-[11px] font-bold transition ${
+                  isActive
+                    ? "bg-green-500/15 text-green-300"
+                    : "text-gray-400 hover:bg-white/10 hover:text-white"
+                }`}
               >
-                Admin
-              </Link>
-            )}
-
-            <div className="text-yellow-400">
-              {username}
-            </div>
-
-            <button
-              onClick={handleLogout}
-              className="bg-gradient-to-r from-red-600 to-red-700 px-4 py-2 rounded-full font-bold"
-            >
-              Wyloguj
-            </button>
-
+                <NavIcon type={item.icon} />
+                <span className="max-w-full truncate">
+                  {item.label}
+                </span>
+              </NavLink>
+            ))}
           </div>
-        )}
-
-      </div>
-    </nav>
+        </nav>
+      )}
+    </>
   )
 }

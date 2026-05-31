@@ -39,7 +39,8 @@ export default function App() {
 
       <Navbar token={token} onLogout={handleLogout} />
 
-      <Routes>
+      <main className={token ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0" : ""}>
+        <Routes>
 
         {/* PUBLIC */}
         <Route
@@ -83,7 +84,8 @@ export default function App() {
           element={<Navigate to={token ? "/matches" : "/login"} />}
         />
 
-      </Routes>
+        </Routes>
+      </main>
 
     </div>
   )
