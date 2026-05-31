@@ -111,7 +111,7 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
               className="min-w-0 text-lg font-black tracking-wide sm:text-2xl"
             >
               <span className="block truncate bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
-                Liga Typerów 2026
+                Mistrzostwa Świata 2026
               </span>
             </Link>
 
