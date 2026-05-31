@@ -17,11 +17,11 @@ export default function App() {
   const [token, setToken] = useState(localStorage.getItem("token"))
   const [pendingPredictionsCount, setPendingPredictionsCount] = useState(0)
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem("token")
     setPendingPredictionsCount(0)
     setToken(null)
-  }
+  }, [])
 
   const refreshPendingPredictionsCount = useCallback(async () => {
     if (!token) {
@@ -69,6 +69,9 @@ export default function App() {
 
     const handleStorageChange = () => {
       const storedToken = localStorage.getItem("token")
+      if (!storedToken) {
+        setPendingPredictionsCount(0)
+      }
       setToken(storedToken)
     }
 
@@ -79,7 +82,11 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    refreshPendingPredictionsCount()
+    const timeoutId = window.setTimeout(() => {
+      refreshPendingPredictionsCount()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
   }, [refreshPendingPredictionsCount])
 
   return (

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import toast from "react-hot-toast"
 import { apiRequest } from "../api"
 import PageLoader from "../components/PageLoader"
@@ -94,12 +95,10 @@ export default function Matches({ onPredictionsChange }) {
 
   const [predictionsModal, setPredictionsModal] = useState(null)
   const [matchPredictions, setMatchPredictions] = useState([])
+  const [searchParams, setSearchParams] = useSearchParams()
+  const editMatchId = searchParams.get("edit")
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const [matchesData, predictionsData] = await Promise.all([
         apiRequest("/matches"),
@@ -116,9 +115,17 @@ export default function Matches({ onPredictionsChange }) {
     }
 
     setLoading(false)
-  }
+  }, [])
 
-  const openModal = (match) => {
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      fetchData()
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [fetchData])
+
+  const openModal = useCallback((match) => {
     const existing = myPredictions.find(p => p.match_id === match.id)
 
     if (existing) {
@@ -130,7 +137,25 @@ export default function Matches({ onPredictionsChange }) {
     }
 
     setSelectedMatch(match)
-  }
+  }, [myPredictions])
+
+  useEffect(() => {
+    if (loading || !editMatchId || matches.length === 0) return
+
+    const matchToEdit = matches.find(match => String(match.id) === String(editMatchId))
+
+    if (matchToEdit) {
+      const isEditable = !matchToEdit.is_finished && new Date(matchToEdit.start_time) > new Date()
+
+      if (isEditable) {
+        window.setTimeout(() => {
+          openModal(matchToEdit)
+        }, 0)
+      }
+    }
+
+    setSearchParams({}, { replace: true })
+  }, [loading, editMatchId, matches, openModal, setSearchParams])
 
   const fetchMatchPredictions = async (match) => {
     try {

@@ -72,16 +72,7 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
 
   if (token) {
     try {
-      const decoded = jwtDecode(token)
-      const now = Date.now() / 1000
-
-      if (decoded.exp && decoded.exp < now) {
-        localStorage.removeItem("token")
-        onLogout()
-        navigate("/login")
-      } else {
-        username = decoded.sub
-      }
+      username = jwtDecode(token).sub
     } catch {
       username = null
     }
