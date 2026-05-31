@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { getUsername } from "../auth"
 import { apiRequest } from "../api"
+import PageLoader from "../components/PageLoader"
 
 export default function Leaderboard() {
 
@@ -29,7 +30,7 @@ export default function Leaderboard() {
   }, [])
 
   if (loading) {
-    return <div className="p-8 text-white">Loading...</div>
+    return <PageLoader title="Ranking Ligi" subtitle="Przeliczam tabelę" cards={5} />
   }
 
   const leader = ranking[0]

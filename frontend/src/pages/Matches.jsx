@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { apiRequest } from "../api"
+import PageLoader from "../components/PageLoader"
 
 const statusFilters = [
   { key: "all", label: "Wszystkie" },
@@ -11,6 +12,73 @@ const statusFilters = [
 ]
 
 const groupFilters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]
+const popularScores = ["1:0", "1:1", "2:1", "2:0"]
+
+const clampScore = (value) => {
+  const parsed = Number(value)
+
+  if (!Number.isFinite(parsed)) return 0
+
+  return Math.min(20, Math.max(0, Math.trunc(parsed)))
+}
+
+function ScoreControl({ label, value, onChange }) {
+  const currentValue = value === "" ? 0 : clampScore(value)
+
+  const updateValue = (nextValue) => {
+    onChange(String(clampScore(nextValue)))
+  }
+
+  const handleInputChange = (event) => {
+    const nextValue = event.target.value
+
+    if (nextValue === "") {
+      onChange("")
+      return
+    }
+
+    updateValue(nextValue)
+  }
+
+  return (
+    <div className="min-w-0 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
+      <div className="truncate text-center text-xs font-bold uppercase tracking-wide text-gray-400">
+        {label}
+      </div>
+
+      <div className="mt-3 flex items-center justify-center gap-2">
+        <button
+          type="button"
+          onClick={() => updateValue(currentValue - 1)}
+          disabled={currentValue <= 0}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-35"
+          aria-label={`Zmniejsz wynik: ${label}`}
+        >
+          -
+        </button>
+
+        <input
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          value={value}
+          onChange={handleInputChange}
+          className="h-12 w-14 rounded-2xl border border-white/15 bg-black/25 text-center text-2xl font-black text-white outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-500/30"
+        />
+
+        <button
+          type="button"
+          onClick={() => updateValue(currentValue + 1)}
+          disabled={currentValue >= 20}
+          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-35"
+          aria-label={`Zwiększ wynik: ${label}`}
+        >
+          +
+        </button>
+      </div>
+    </div>
+  )
+}
 
 export default function Matches() {
 
@@ -87,6 +155,21 @@ export default function Matches() {
       return
     }
 
+    const normalizedHomeScore = Number(homeScore)
+    const normalizedAwayScore = Number(awayScore)
+
+    if (
+      !Number.isInteger(normalizedHomeScore) ||
+      !Number.isInteger(normalizedAwayScore) ||
+      normalizedHomeScore < 0 ||
+      normalizedAwayScore < 0 ||
+      normalizedHomeScore > 20 ||
+      normalizedAwayScore > 20
+    ) {
+      toast.error("Wynik musi być liczbą od 0 do 20")
+      return
+    }
+
     const existing = myPredictions.find(
       p => p.match_id === selectedMatch.id
     )
@@ -97,8 +180,8 @@ export default function Matches() {
           method: "POST",
           body: JSON.stringify({
             match_id: selectedMatch.id,
-            home_score: Number(homeScore),
-            away_score: Number(awayScore)
+            home_score: normalizedHomeScore,
+            away_score: normalizedAwayScore
           })
         })
 
@@ -110,8 +193,8 @@ export default function Matches() {
         const data = await apiRequest(`/predictions/${existing.id}`, {
           method: "PUT",
           body: JSON.stringify({
-            home_score: Number(homeScore),
-            away_score: Number(awayScore)
+            home_score: normalizedHomeScore,
+            away_score: normalizedAwayScore
           })
         })
 
@@ -233,7 +316,7 @@ export default function Matches() {
   )
 
   if (loading) {
-    return <div className="p-6 text-white">Loading...</div>
+    return <PageLoader title="Mecze" subtitle="Ładuję terminarz i Twoje typy" cards={5} />
   }
 
   return (
@@ -438,90 +521,138 @@ export default function Matches() {
       </div>
 
       {selectedMatch && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-4 pb-4 pt-10 backdrop-blur-sm sm:items-center sm:p-6">
 
-          <div className="bg-[#111827] border border-white/10 p-6 sm:p-8 rounded-3xl w-[calc(100%-2rem)] max-w-sm shadow-2xl text-center">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111827] p-5 text-left shadow-2xl sm:p-7">
 
-            <h2 className="text-2xl font-bold mb-6">
-              {selectedMatch.home_team} vs {selectedMatch.away_team}
-            </h2>
+            <div className="mb-5">
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-400">
+                {selectedMatch.group_name && (
+                  <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-200">
+                    Grupa {selectedMatch.group_name}
+                  </span>
+                )}
+                <span>
+                  {new Date(selectedMatch.start_time).toLocaleString("pl-PL", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </span>
+              </div>
 
-            <div className="flex justify-center items-center gap-6 mb-6">
-
-              <input
-                type="number"
-                min="0"
-                max="20"
-                value={homeScore}
-                onChange={(e) => setHomeScore(e.target.value)}
-                className="w-20 p-3 rounded-xl bg-white/10 text-white text-center border border-white/20 focus:border-red-500 outline-none"
-              />
-
-              <span className="text-2xl font-bold">:</span>
-
-              <input
-                type="number"
-                min="0"
-                max="20"
-                value={awayScore}
-                onChange={(e) => setAwayScore(e.target.value)}
-                className="w-20 p-3 rounded-xl bg-white/10 text-white text-center border border-white/20 focus:border-red-500 outline-none"
-              />
-
+              <h2 className="text-2xl font-black leading-tight text-white">
+                {selectedMatch.home_team}
+                <span className="mx-2 text-gray-500">vs</span>
+                {selectedMatch.away_team}
+              </h2>
             </div>
 
-            <div className="flex justify-between">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-start gap-3">
+              <ScoreControl
+                label={selectedMatch.home_team}
+                value={homeScore}
+                onChange={setHomeScore}
+              />
 
+              <div className="pt-14 text-2xl font-black text-gray-500">:</div>
+
+              <ScoreControl
+                label={selectedMatch.away_team}
+                value={awayScore}
+                onChange={setAwayScore}
+              />
+            </div>
+
+            <div className="mt-5">
+              <div className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                Szybki wybór
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {popularScores.map(score => {
+                  const [home, away] = score.split(":")
+
+                  return (
+                    <button
+                      key={score}
+                      type="button"
+                      onClick={() => {
+                        setHomeScore(home)
+                        setAwayScore(away)
+                      }}
+                      className="rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-gray-100 transition hover:bg-white/15"
+                    >
+                      {score}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+
+            <div className="mt-6 grid grid-cols-2 gap-3">
               <button
+                type="button"
                 onClick={() => setSelectedMatch(null)}
-                className="px-5 py-2 bg-gray-600 rounded-full hover:bg-gray-700 transition"
+                className="rounded-full bg-gray-600 px-5 py-3 font-bold transition hover:bg-gray-700"
               >
                 Anuluj
               </button>
 
               <button
+                type="button"
                 onClick={submitPrediction}
-                className="px-5 py-2 rounded-full font-bold bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 transition"
+                className="rounded-full bg-gradient-to-r from-green-600 to-emerald-500 px-5 py-3 font-bold transition hover:from-green-700 hover:to-emerald-600"
               >
                 Zapisz
               </button>
-
             </div>
-
           </div>
         </div>
       )}
 
       {predictionsModal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-4 pb-4 pt-10 backdrop-blur-sm sm:items-center sm:p-6">
 
-          <div className="bg-[#111827] border border-white/10 p-6 sm:p-8 rounded-3xl w-[calc(100%-2rem)] max-w-sm shadow-2xl">
+          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111827] p-5 shadow-2xl sm:p-7">
 
-            <h2 className="text-2xl font-bold mb-6 text-center">
-              Typy użytkowników
-            </h2>
-
-            <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
-              {matchPredictions.map((p, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center border-b border-white/10 pb-2"
-                >
-                  <div className="font-semibold">{p.username}</div>
-                  <div>{p.prediction}</div>
-                  {p.points !== null && (
-                    <div className="text-yellow-400 font-bold">
-                      {p.points}
-                    </div>
-                  )}
-                </div>
-              ))}
+            <div className="mb-5 text-center">
+              <h2 className="text-2xl font-black">
+                Typy użytkowników
+              </h2>
+              <div className="mt-2 text-sm text-gray-400">
+                {predictionsModal.home_team} vs {predictionsModal.away_team}
+              </div>
             </div>
+
+            {matchPredictions.length === 0 ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-center text-sm text-gray-400">
+                Brak widocznych typów dla tego meczu.
+              </div>
+            ) : (
+              <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                {matchPredictions.map((p, index) => (
+                  <div
+                    key={index}
+                    className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3"
+                  >
+                    <div className="min-w-0 truncate font-semibold">{p.username}</div>
+                    <div className="font-black text-yellow-300">{p.prediction}</div>
+                    {p.points !== null && (
+                      <div className="rounded-full bg-white/10 px-2 py-1 text-xs font-bold text-gray-200">
+                        {p.points} pkt
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             <div className="mt-6 text-center">
               <button
+                type="button"
                 onClick={() => setPredictionsModal(null)}
-                className="px-6 py-2 bg-gray-600 rounded-full hover:bg-gray-700 transition"
+                className="rounded-full bg-gray-600 px-6 py-3 font-bold transition hover:bg-gray-700"
               >
                 Zamknij
               </button>

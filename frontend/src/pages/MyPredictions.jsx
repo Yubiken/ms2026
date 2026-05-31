@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { apiRequest } from "../api"
+import PageLoader from "../components/PageLoader"
 
 const filters = [
   { key: "all", label: "Wszystkie" },
@@ -33,7 +34,7 @@ export default function MyPredictions() {
   }, [])
 
   if (loading) {
-    return <div className="p-8 text-white">Loading...</div>
+    return <PageLoader title="Moje Typy" subtitle="Zbieram Twoje typy i punkty" cards={3} />
   }
 
   const getMatchStatus = (match) => {

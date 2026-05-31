@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { apiRequest } from "../api"
+import PageLoader from "../components/PageLoader"
 
 export default function Admin() {
 
@@ -137,7 +138,7 @@ export default function Admin() {
   const finishedCount = matches.filter(match => match.is_finished).length
 
   if (loading) {
-    return <div className="p-8 text-white">Loading...</div>
+    return <PageLoader title="Admin" subtitle="Ładuję mecze do rozliczenia" cards={5} />
   }
 
   return (
