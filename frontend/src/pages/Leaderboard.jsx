@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { getUsername } from "../auth"
 import { apiRequest } from "../api"
+import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
 
 export default function Leaderboard() {
@@ -66,9 +67,13 @@ export default function Leaderboard() {
         </div>
 
         {ranking.length === 0 ? (
-          <div className="stadium-panel rounded-2xl p-8 text-center text-gray-300">
-            Ranking jest jeszcze pusty.
-          </div>
+          <EmptyState
+            icon="ranking"
+            title="Ranking jest jeszcze pusty"
+            description="Tabela zacznie żyć, gdy pojawią się pierwsze typy i rozliczone wyniki."
+            actionLabel="Przejdź do meczów"
+            actionTo="/matches"
+          />
         ) : (
           <>
             <div className="grid gap-3 mb-8 sm:grid-cols-2 lg:grid-cols-4">

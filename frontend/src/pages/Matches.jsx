@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import toast from "react-hot-toast"
 import { apiRequest } from "../api"
+import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
 
 const statusFilters = [
@@ -552,9 +553,15 @@ export default function Matches({ onPredictionsChange }) {
         </div>
 
         {matchGroups.length === 0 ? (
-          <div className="stadium-panel rounded-2xl p-8 text-center text-gray-300">
-            Brak meczów dla wybranych filtrów.
-          </div>
+          <EmptyState
+            title="Nie ma meczów w tym widoku"
+            description="Zmień status albo grupę, żeby zobaczyć inne spotkania."
+            actionLabel="Wyczyść filtry"
+            onAction={() => {
+              setActiveStatusFilter("all")
+              setActiveGroupFilter("all")
+            }}
+          />
         ) : (
           <div className="space-y-10">
 
@@ -775,9 +782,12 @@ export default function Matches({ onPredictionsChange }) {
             </div>
 
             {matchPredictions.length === 0 ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-center text-sm text-gray-400">
-                Brak widocznych typów dla tego meczu.
-              </div>
+              <EmptyState
+                compact
+                icon="predictions"
+                title="Brak widocznych typów"
+                description="Nikt nie dodał typu albo typy nie są jeszcze dostępne dla tego meczu."
+              />
             ) : (
               <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
                 {matchPredictions.map((p, index) => (

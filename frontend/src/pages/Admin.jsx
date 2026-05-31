@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { apiRequest } from "../api"
+import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
 
 export default function Admin() {
@@ -187,9 +188,13 @@ export default function Admin() {
         </div>
 
         {visibleMatches.length === 0 ? (
-          <div className="stadium-panel rounded-2xl p-8 text-center text-gray-300">
-            Brak meczów w tym widoku.
-          </div>
+          <EmptyState
+            icon="admin"
+            title="Brak meczów w tym widoku"
+            description="Zmień filtr, żeby zobaczyć pozostałe mecze."
+            actionLabel={filter === "all" ? null : "Pokaż wszystkie"}
+            onAction={filter === "all" ? null : () => setFilter("all")}
+          />
         ) : (
           <div className="grid gap-4">
             {visibleMatches.map(match => {

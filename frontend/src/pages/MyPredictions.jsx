@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
 import { apiRequest } from "../api"
+import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
 
 const filters = [
@@ -310,18 +311,13 @@ export default function MyPredictions() {
         </div>
 
         {predictions.length === 0 ? (
-          <div className="stadium-panel rounded-2xl p-8 text-center">
-            <div className="text-xl font-black">Nie masz jeszcze żadnych typów</div>
-            <div className="mt-2 text-sm text-gray-400">
-              Przejdź do listy meczów i obstaw pierwsze wyniki.
-            </div>
-            <Link
-              to="/matches"
-              className="mt-5 inline-block rounded-full bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-2 font-bold uppercase text-white transition hover:from-green-700 hover:to-emerald-600"
-            >
-              Przejdź do meczów
-            </Link>
-          </div>
+          <EmptyState
+            icon="predictions"
+            title="Nie masz jeszcze żadnych typów"
+            description="Przejdź do listy meczów i obstaw pierwsze wyniki."
+            actionLabel="Przejdź do meczów"
+            actionTo="/matches"
+          />
         ) : activeFilter === "all" ? (
           <div className="space-y-10">
             {sections.map(section => (
@@ -337,9 +333,12 @@ export default function MyPredictions() {
                 </div>
 
                 {section.items.length === 0 ? (
-                  <div className="stadium-panel rounded-2xl p-5 text-sm font-semibold text-gray-400">
-                    Brak typów w tej sekcji.
-                  </div>
+                  <EmptyState
+                    compact
+                    icon="predictions"
+                    title="Brak typów"
+                    description="Ta sekcja uzupełni się automatycznie, gdy pojawią się pasujące typy."
+                  />
                 ) : (
                   <div className="space-y-4">
                     {section.items.map(renderPredictionCard)}
@@ -349,9 +348,13 @@ export default function MyPredictions() {
             ))}
           </div>
         ) : filteredPredictions.length === 0 ? (
-          <div className="stadium-panel rounded-2xl p-8 text-center text-gray-300">
-            Brak typów dla filtra: {activeFilterLabel}.
-          </div>
+          <EmptyState
+            icon="predictions"
+            title="Brak typów dla tego filtra"
+            description={`Nie znaleziono typów w widoku: ${activeFilterLabel}.`}
+            actionLabel="Pokaż wszystkie"
+            onAction={() => setActiveFilter("all")}
+          />
         ) : (
           <div className="space-y-4">
             {filteredPredictions.map(renderPredictionCard)}
