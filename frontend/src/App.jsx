@@ -56,6 +56,14 @@ export default function App() {
     }
   }, [token])
 
+  const handlePredictionsChange = useCallback((pendingDelta = 0) => {
+    if (pendingDelta !== 0) {
+      setPendingPredictionsCount(currentCount => Math.max(0, currentCount + pendingDelta))
+    }
+
+    refreshPendingPredictionsCount()
+  }, [refreshPendingPredictionsCount])
+
   // 🔐 synchronizacja tokena z localStorage
   useEffect(() => {
 
@@ -104,7 +112,7 @@ export default function App() {
         {/* PROTECTED */}
         <Route
           path="/matches"
-          element={token ? <Matches onPredictionsChange={refreshPendingPredictionsCount} /> : <Navigate to="/login" />}
+          element={token ? <Matches onPredictionsChange={handlePredictionsChange} /> : <Navigate to="/login" />}
         />
 
         <Route

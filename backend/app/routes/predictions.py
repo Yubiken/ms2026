@@ -50,6 +50,22 @@ def to_utc(dt: datetime) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
+def prediction_payload(prediction: Prediction, match: Match) -> dict:
+    return {
+        "id": prediction.id,
+        "match_id": match.id,
+        "home_team": match.home_team,
+        "away_team": match.away_team,
+        "start_time": match.start_time,
+        "is_finished": match.is_finished,
+        "final_home_score": match.home_score,
+        "final_away_score": match.away_score,
+        "prediction_home": prediction.home_score,
+        "prediction_away": prediction.away_score,
+        "points": prediction.points,
+    }
+
+
 # ==============================
 # CREATE PREDICTION
 # ==============================
@@ -96,10 +112,11 @@ def create_prediction(
 
     db.add(new_prediction)
     db.commit()
+    db.refresh(new_prediction)
 
     logger.info(f"Prediction created user={current_user.id} match={match.id}")
 
-    return {"message": "Prediction added"}
+    return prediction_payload(new_prediction, match)
 
 
 # ==============================
@@ -141,10 +158,11 @@ def update_prediction(
     prediction.away_score = data.away_score
 
     db.commit()
+    db.refresh(prediction)
 
     logger.info(f"Prediction updated user={current_user.id}")
 
-    return {"message": "Prediction updated"}
+    return prediction_payload(prediction, match)
 
 
 # ==============================

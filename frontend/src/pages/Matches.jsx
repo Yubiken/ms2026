@@ -149,6 +149,36 @@ export default function Matches({ onPredictionsChange }) {
     }
   }
 
+  const buildLocalPrediction = (match, existing, responseData, home, away) => ({
+    id: responseData?.id ?? existing?.id,
+    match_id: responseData?.match_id ?? match.id,
+    home_team: responseData?.home_team ?? match.home_team,
+    away_team: responseData?.away_team ?? match.away_team,
+    start_time: responseData?.start_time ?? match.start_time,
+    is_finished: responseData?.is_finished ?? match.is_finished,
+    final_home_score: responseData?.final_home_score ?? match.home_score,
+    final_away_score: responseData?.final_away_score ?? match.away_score,
+    prediction_home: responseData?.prediction_home ?? home,
+    prediction_away: responseData?.prediction_away ?? away,
+    points: responseData?.points ?? existing?.points ?? 0,
+  })
+
+  const upsertMyPrediction = (prediction) => {
+    setMyPredictions(currentPredictions => {
+      const alreadyExists = currentPredictions.some(
+        item => item.match_id === prediction.match_id
+      )
+
+      if (!alreadyExists) {
+        return [...currentPredictions, prediction]
+      }
+
+      return currentPredictions.map(item =>
+        item.match_id === prediction.match_id ? prediction : item
+      )
+    })
+  }
+
   const submitPrediction = async () => {
     if (homeScore === "" || awayScore === "") {
       toast.error("Wprowadź wynik meczu")
@@ -175,6 +205,8 @@ export default function Matches({ onPredictionsChange }) {
     )
 
     try {
+      let savedPrediction = null
+
       if (!existing) {
         const data = await apiRequest("/predictions", {
           method: "POST",
@@ -186,6 +218,14 @@ export default function Matches({ onPredictionsChange }) {
         })
 
         if (!data) return
+
+        savedPrediction = buildLocalPrediction(
+          selectedMatch,
+          existing,
+          data,
+          normalizedHomeScore,
+          normalizedAwayScore
+        )
 
         toast.success("Twój typ został zapisany")
 
@@ -200,12 +240,26 @@ export default function Matches({ onPredictionsChange }) {
 
         if (!data) return
 
+        savedPrediction = buildLocalPrediction(
+          selectedMatch,
+          existing,
+          data,
+          normalizedHomeScore,
+          normalizedAwayScore
+        )
+
         toast.success("Twój typ został zaktualizowany")
       }
 
       setSelectedMatch(null)
-      await fetchData()
-      onPredictionsChange?.()
+
+      if (savedPrediction?.id == null) {
+        await fetchData()
+      } else {
+        upsertMyPrediction(savedPrediction)
+      }
+
+      onPredictionsChange?.(existing ? 0 : -1)
 
     } catch {
       toast.error("Błąd serwera")
