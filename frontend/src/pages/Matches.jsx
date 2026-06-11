@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import toast from "react-hot-toast"
 import { apiRequest } from "../api"
+import { getUsername } from "../auth"
 import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
 
@@ -15,6 +16,22 @@ const statusFilters = [
 
 const groupFilters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]
 const popularScores = ["1:0", "1:1", "2:1", "2:0"]
+
+const getPredictionCountLabel = (count) => {
+  if (count === 1) return "1 typ"
+  if (count >= 2 && count <= 4) return `${count} typy`
+
+  return `${count} typów`
+}
+
+const getPredictionPointsBadgeClass = (points) => {
+  const value = Number(points)
+
+  if (value === 2) return "bg-green-500/15 text-green-300 ring-1 ring-green-400/30"
+  if (value === 1) return "bg-yellow-500/15 text-yellow-300 ring-1 ring-yellow-400/30"
+
+  return "bg-white/10 text-gray-300"
+}
 
 const clampScore = (value) => {
   const parsed = Number(value)
@@ -98,6 +115,7 @@ export default function Matches({ onPredictionsChange }) {
   const [matchPredictions, setMatchPredictions] = useState([])
   const [searchParams, setSearchParams] = useSearchParams()
   const editMatchId = searchParams.get("edit")
+  const currentUsername = getUsername()
 
   const fetchData = useCallback(async () => {
     try {
@@ -407,6 +425,34 @@ export default function Matches({ onPredictionsChange }) {
         return groups
       }, {})
   )
+
+  const predictionStats = matchPredictions.reduce(
+    (stats, prediction) => {
+      const score = String(prediction.prediction)
+      const [home, away] = score.split(":").map(Number)
+
+      stats.scoreCounts[score] = (stats.scoreCounts[score] || 0) + 1
+
+      if (Number.isFinite(home) && Number.isFinite(away)) {
+        if (home > away) stats.homeWins += 1
+        if (home === away) stats.draws += 1
+        if (home < away) stats.awayWins += 1
+      }
+
+      return stats
+    },
+    {
+      homeWins: 0,
+      draws: 0,
+      awayWins: 0,
+      scoreCounts: {},
+    }
+  )
+  const topPrediction = Object.entries(predictionStats.scoreCounts)
+    .sort(([scoreA, countA], [scoreB, countB]) => countB - countA || scoreA.localeCompare(scoreB))[0]
+  const hasFinalScore = predictionsModal?.is_finished
+    && predictionsModal.home_score != null
+    && predictionsModal.away_score != null
 
   if (loading) {
     return <PageLoader title="Mecze" subtitle="Ładuję terminarz i Twoje typy" cards={5} />
@@ -776,8 +822,21 @@ export default function Matches({ onPredictionsChange }) {
               <h2 className="text-2xl font-black">
                 Typy użytkowników
               </h2>
-              <div className="mt-2 text-sm text-gray-400">
-                {predictionsModal.home_team} vs {predictionsModal.away_team}
+              <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-sm sm:text-base">
+                <div className="min-w-0 truncate text-right font-bold">
+                  {predictionsModal.home_team}
+                </div>
+                <div className="rounded-full bg-white/10 px-3 py-1 font-black text-yellow-300">
+                  {hasFinalScore
+                    ? `${predictionsModal.home_score}:${predictionsModal.away_score}`
+                    : "vs"}
+                </div>
+                <div className="min-w-0 truncate text-left font-bold">
+                  {predictionsModal.away_team}
+                </div>
+              </div>
+              <div className="mt-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                {hasFinalScore ? "Wynik końcowy · punkty naliczone" : "Typy odblokowane po starcie meczu"}
               </div>
             </div>
 
@@ -789,22 +848,59 @@ export default function Matches({ onPredictionsChange }) {
                 description="Nikt nie dodał typu albo typy nie są jeszcze dostępne dla tego meczu."
               />
             ) : (
-              <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
-                {matchPredictions.map((p, index) => (
-                  <div
-                    key={index}
-                    className="grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3"
-                  >
-                    <div className="min-w-0 truncate font-semibold">{p.username}</div>
-                    <div className="font-black text-yellow-300">{p.prediction}</div>
-                    {p.points !== null && (
-                      <div className="rounded-full bg-white/10 px-2 py-1 text-xs font-bold text-gray-200">
-                        {p.points} pkt
+              <>
+                <div className="mb-4 border-y border-white/10 py-3">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Typy</div>
+                      <div className="mt-1 font-black text-white">
+                        {getPredictionCountLabel(matchPredictions.length)}
                       </div>
-                    )}
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Najczęściej</div>
+                      <div className="mt-1 font-black text-yellow-300">
+                        {topPrediction ? `${topPrediction[0]} · ${getPredictionCountLabel(topPrediction[1])}` : "-"}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-gray-500">1 / X / 2</div>
+                      <div className="mt-1 font-black text-gray-200">
+                        {predictionStats.homeWins} / {predictionStats.draws} / {predictionStats.awayWins}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Różne wyniki</div>
+                      <div className="mt-1 font-black text-green-300">{Object.keys(predictionStats.scoreCounts).length}</div>
+                    </div>
                   </div>
-                ))}
-              </div>
+                </div>
+
+                <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                  {matchPredictions.map((p, index) => {
+                    const isCurrentUser = p.username === currentUsername
+
+                    return (
+                      <div
+                        key={index}
+                        className={`grid grid-cols-[1fr_auto_auto] items-center gap-3 rounded-2xl border px-4 py-3 ${
+                          isCurrentUser
+                            ? "border-green-400/70 bg-green-500/10 shadow-lg shadow-green-500/10"
+                            : "border-white/10 bg-white/[0.04]"
+                        }`}
+                      >
+                        <div className="min-w-0 truncate font-semibold">{p.username}</div>
+                        <div className="font-black text-yellow-300">{p.prediction}</div>
+                        {p.points !== null && (
+                          <div className={`rounded-full px-2 py-1 text-xs font-bold ${getPredictionPointsBadgeClass(p.points)}`}>
+                            {Number(p.points) > 0 ? `+${p.points}` : p.points} pkt
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
             )}
 
             <div className="mt-6 text-center">
