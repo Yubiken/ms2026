@@ -34,6 +34,13 @@ const getMatchPredictionCountLabel = (count) => {
   return `${value} osób obstawiło`
 }
 
+const getVisibleMatchPredictionCount = (match, myPrediction) => {
+  const apiCount = Number(match.predictions_count)
+  const normalizedApiCount = Number.isFinite(apiCount) ? Math.max(0, apiCount) : 0
+
+  return myPrediction ? Math.max(normalizedApiCount, 1) : normalizedApiCount
+}
+
 const getPredictionPointsBadgeClass = (points) => {
   const value = Number(points)
 
@@ -233,6 +240,22 @@ export default function Matches({ onPredictionsChange }) {
     })
   }
 
+  const incrementMatchPredictionCount = (matchId) => {
+    setMatches(currentMatches =>
+      currentMatches.map(match => {
+        if (match.id !== matchId) return match
+
+        const currentCount = Number(match.predictions_count)
+        const normalizedCount = Number.isFinite(currentCount) ? Math.max(0, currentCount) : 0
+
+        return {
+          ...match,
+          predictions_count: normalizedCount + 1,
+        }
+      })
+    )
+  }
+
   const submitPrediction = async () => {
     if (homeScore === "" || awayScore === "") {
       toast.error("Wprowadź wynik meczu")
@@ -311,6 +334,10 @@ export default function Matches({ onPredictionsChange }) {
         await fetchData()
       } else {
         upsertMyPrediction(savedPrediction)
+
+        if (!existing) {
+          incrementMatchPredictionCount(savedPrediction.match_id)
+        }
       }
 
       onPredictionsChange?.(existing ? 0 : -1)
@@ -511,7 +538,7 @@ export default function Matches({ onPredictionsChange }) {
                         })}
                       </span>
                       <span className="rounded-full border border-green-400/25 bg-green-500/15 px-2.5 py-1 text-xs font-bold text-green-300">
-                        {getMatchPredictionCountLabel(nextMatch.predictions_count)}
+                        {getMatchPredictionCountLabel(getVisibleMatchPredictionCount(nextMatch, nextMatchPrediction))}
                       </span>
                       {nextMatchPrediction && (
                         <span className="rounded-full border border-yellow-400/25 bg-yellow-500/15 px-2.5 py-1 text-xs font-bold text-yellow-300">
@@ -699,7 +726,7 @@ export default function Matches({ onPredictionsChange }) {
                                 <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold">
                                   {!isStarted && (
                                     <span className="rounded-full border border-green-400/25 bg-green-500/15 px-2.5 py-1 text-green-300">
-                                      {getMatchPredictionCountLabel(match.predictions_count)}
+                                      {getMatchPredictionCountLabel(getVisibleMatchPredictionCount(match, myPrediction))}
                                     </span>
                                   )}
                                   {myPrediction && (
