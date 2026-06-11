@@ -24,6 +24,16 @@ const getPredictionCountLabel = (count) => {
   return `${count} typów`
 }
 
+const getMatchPredictionCountLabel = (count) => {
+  const value = Number(count || 0)
+
+  if (value === 0) return "Nikt jeszcze nie obstawił"
+  if (value === 1) return "1 osoba obstawiła"
+  if (value >= 2 && value <= 4) return `${value} osoby obstawiły`
+
+  return `${value} osób obstawiło`
+}
+
 const getPredictionPointsBadgeClass = (points) => {
   const value = Number(points)
 
@@ -500,6 +510,9 @@ export default function Matches({ onPredictionsChange }) {
                           minute: "2-digit"
                         })}
                       </span>
+                      <span className="rounded-full border border-green-400/25 bg-green-500/15 px-2.5 py-1 text-xs font-bold text-green-300">
+                        {getMatchPredictionCountLabel(nextMatch.predictions_count)}
+                      </span>
                       {nextMatchPrediction && (
                         <span className="rounded-full border border-yellow-400/25 bg-yellow-500/15 px-2.5 py-1 text-xs font-bold text-yellow-300">
                           Twój typ: {nextMatchPrediction.prediction_home}:{nextMatchPrediction.prediction_away}
@@ -682,9 +695,18 @@ export default function Matches({ onPredictionsChange }) {
                                 {match.away_team}
                               </div>
 
-                              {myPrediction && (
-                                <div className="text-sm text-yellow-400 mt-3 font-semibold">
-                                  Twój typ: {myPrediction.prediction_home}:{myPrediction.prediction_away}
+                              {(!isStarted || myPrediction) && (
+                                <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold">
+                                  {!isStarted && (
+                                    <span className="rounded-full border border-green-400/25 bg-green-500/15 px-2.5 py-1 text-green-300">
+                                      {getMatchPredictionCountLabel(match.predictions_count)}
+                                    </span>
+                                  )}
+                                  {myPrediction && (
+                                    <span className="rounded-full border border-yellow-400/25 bg-yellow-500/15 px-2.5 py-1 text-yellow-300">
+                                      Twój typ: {myPrediction.prediction_home}:{myPrediction.prediction_away}
+                                    </span>
+                                  )}
                                 </div>
                               )}
                             </div>

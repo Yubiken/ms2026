@@ -3,10 +3,11 @@ from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Match, User
+from ..models import Match, Prediction, User
 from .users import get_current_user
 
 router = APIRouter(tags=["Matches"])
@@ -111,7 +112,24 @@ def create_matches_bulk(
     summary="Lista meczow",
 )
 def get_matches(db: Session = Depends(get_db)):
-    matches = db.query(Match).order_by(Match.start_time.asc()).all()
+    prediction_counts = (
+        db.query(
+            Prediction.match_id,
+            func.count(Prediction.id).label("predictions_count"),
+        )
+        .group_by(Prediction.match_id)
+        .subquery()
+    )
+
+    matches = (
+        db.query(
+            Match,
+            func.coalesce(prediction_counts.c.predictions_count, 0).label("predictions_count"),
+        )
+        .outerjoin(prediction_counts, Match.id == prediction_counts.c.match_id)
+        .order_by(Match.start_time.asc())
+        .all()
+    )
 
     return [
         {
@@ -126,8 +144,9 @@ def get_matches(db: Session = Depends(get_db)):
             "is_finished": m.is_finished,
             "home_score": m.home_score,
             "away_score": m.away_score,
+            "predictions_count": int(predictions_count or 0),
         }
-        for m in matches
+        for m, predictions_count in matches
     ]
 
 
