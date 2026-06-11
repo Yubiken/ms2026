@@ -85,6 +85,7 @@ class Prediction(Base):
     away_score = Column(Integer, nullable=False)
 
     points = Column(Integer, default=0)
+    beers_count = Column(Integer, default=0, nullable=False)
 
     user = relationship("User", back_populates="predictions")
     match = relationship("Match", back_populates="predictions")

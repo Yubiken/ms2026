@@ -48,6 +48,23 @@ def ensure_match_external_columns():
         )
 
 
+def ensure_prediction_beers_column():
+    inspector = inspect(engine)
+
+    if not inspector.has_table("predictions"):
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("predictions")}
+
+    if "beers_count" in existing_columns:
+        return
+
+    with engine.begin() as connection:
+        connection.execute(
+            text("ALTER TABLE predictions ADD COLUMN beers_count INTEGER DEFAULT 0 NOT NULL")
+        )
+
+
 # Dependency do FastAPI
 def get_db():
     db = SessionLocal()

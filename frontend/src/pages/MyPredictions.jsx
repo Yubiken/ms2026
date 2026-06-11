@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { Link } from "react-router-dom"
+import toast from "react-hot-toast"
 import { apiRequest } from "../api"
 import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
@@ -13,11 +14,30 @@ const filters = [
   { key: "zero", label: "Bez punktów" },
 ]
 
+const clampBeerCount = (value) => {
+  const parsed = Number(value)
+
+  if (!Number.isFinite(parsed)) return 0
+
+  return Math.min(99, Math.max(0, Math.trunc(parsed)))
+}
+
+const getBeerCountLabel = (count) => {
+  const value = Number(count ?? 0)
+
+  if (value === 1) return "1 piwo"
+  if (value >= 2 && value <= 4) return `${value} piwa`
+
+  return `${value} piwek`
+}
+
 export default function MyPredictions() {
 
   const [predictions, setPredictions] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState("all")
+  const [beerDrafts, setBeerDrafts] = useState({})
+  const [savingBeerId, setSavingBeerId] = useState(null)
 
   useEffect(() => {
     apiRequest("/my-predictions")
@@ -29,6 +49,81 @@ export default function MyPredictions() {
       })
       .catch(() => setLoading(false))
   }, [])
+
+  const getBeerDraftValue = (prediction) => {
+    const draft = beerDrafts[prediction.id]
+
+    if (draft != null) return draft
+
+    return String(Number(prediction.beers_count ?? 0))
+  }
+
+  const setBeerDraftValue = (predictionId, value) => {
+    if (value === "") {
+      setBeerDrafts(current => ({
+        ...current,
+        [predictionId]: "",
+      }))
+      return
+    }
+
+    setBeerDrafts(current => ({
+      ...current,
+      [predictionId]: String(clampBeerCount(value)),
+    }))
+  }
+
+  const updatePredictionBeerCount = (updatedPrediction) => {
+    setPredictions(currentPredictions =>
+      currentPredictions.map(prediction =>
+        prediction.id === updatedPrediction.id
+          ? {
+              ...prediction,
+              beers_count: updatedPrediction.beers_count,
+            }
+          : prediction
+      )
+    )
+  }
+
+  const saveBeerCount = async (prediction, rawValue) => {
+    const beersCount = clampBeerCount(rawValue)
+
+    setSavingBeerId(prediction.id)
+
+    try {
+      const data = await apiRequest(`/predictions/${prediction.id}/beers`, {
+        method: "PUT",
+        body: JSON.stringify({
+          beers_count: beersCount,
+        }),
+      })
+
+      if (!data) return
+
+      updatePredictionBeerCount(data)
+      setBeerDrafts(current => ({
+        ...current,
+        [prediction.id]: String(data.beers_count ?? beersCount),
+      }))
+    } catch {
+      toast.error("Nie udało się zapisać piwek")
+    } finally {
+      setSavingBeerId(null)
+    }
+  }
+
+  const adjustBeerCount = (prediction, delta) => {
+    const currentValue = clampBeerCount(getBeerDraftValue(prediction))
+    const nextValue = clampBeerCount(currentValue + delta)
+
+    setBeerDrafts(current => ({
+      ...current,
+      [prediction.id]: String(nextValue),
+    }))
+
+    saveBeerCount(prediction, nextValue)
+  }
 
   if (loading) {
     return <PageLoader title="Moje Typy" subtitle="Zbieram Twoje typy i punkty" cards={3} />
@@ -55,6 +150,9 @@ export default function MyPredictions() {
 
   const totalPoints = predictions.reduce((sum, prediction) => {
     return sum + Number(prediction.points ?? 0)
+  }, 0)
+  const totalBeers = predictions.reduce((sum, prediction) => {
+    return sum + Number(prediction.beers_count ?? 0)
   }, 0)
 
   const finishedCount = finishedPredictions.length
@@ -121,6 +219,8 @@ export default function MyPredictions() {
     const status = getMatchStatus(prediction)
     const points = Number(prediction.points ?? 0)
     const pointsLabel = getPointsLabel(prediction)
+    const beerValue = getBeerDraftValue(prediction)
+    const isSavingBeer = savingBeerId === prediction.id
 
     return (
       <div
@@ -158,6 +258,48 @@ export default function MyPredictions() {
                   </span>
                 </>
               )}
+            </div>
+
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm font-semibold">
+              <span className="text-gray-400">Piwka przy meczu</span>
+              <div className="flex items-center rounded-full border border-white/10 bg-white/[0.06] p-1">
+                <button
+                  type="button"
+                  onClick={() => adjustBeerCount(prediction, -1)}
+                  disabled={isSavingBeer || clampBeerCount(beerValue) <= 0}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-lg font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-35"
+                  aria-label="Zmniejsz liczbę piwek"
+                >
+                  -
+                </button>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={beerValue}
+                  onChange={(event) => setBeerDraftValue(prediction.id, event.target.value)}
+                  onBlur={() => saveBeerCount(prediction, beerValue)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.currentTarget.blur()
+                    }
+                  }}
+                  className="h-8 w-12 bg-transparent text-center text-base font-black text-green-300 outline-none"
+                  aria-label="Liczba piwek wypitych podczas meczu"
+                />
+                <button
+                  type="button"
+                  onClick={() => adjustBeerCount(prediction, 1)}
+                  disabled={isSavingBeer || clampBeerCount(beerValue) >= 99}
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-lg font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-35"
+                  aria-label="Zwiększ liczbę piwek"
+                >
+                  +
+                </button>
+              </div>
+              <span className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                {isSavingBeer ? "Zapisuję..." : getBeerCountLabel(clampBeerCount(beerValue))}
+              </span>
             </div>
 
             {pointsLabel && (
@@ -231,6 +373,7 @@ export default function MyPredictions() {
           <div className="rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 px-7 py-4 text-black shadow-xl">
             <div className="text-xs font-black uppercase tracking-wide">Razem</div>
             <div className="text-3xl font-black">{totalPoints} pkt</div>
+            <div className="mt-1 text-sm font-black">{getBeerCountLabel(totalBeers)}</div>
           </div>
         </div>
 

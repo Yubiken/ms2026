@@ -220,6 +220,7 @@ export default function Matches({ onPredictionsChange }) {
     final_away_score: responseData?.final_away_score ?? match.away_score,
     prediction_home: responseData?.prediction_home ?? home,
     prediction_away: responseData?.prediction_away ?? away,
+    beers_count: responseData?.beers_count ?? existing?.beers_count ?? 0,
     points: responseData?.points ?? existing?.points ?? 0,
   })
 

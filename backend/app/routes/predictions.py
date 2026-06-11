@@ -32,6 +32,10 @@ class PredictionUpdate(BaseModel):
     away_score: int = Field(..., ge=0, le=20)
 
 
+class BeerUpdate(BaseModel):
+    beers_count: int = Field(..., ge=0, le=99)
+
+
 class MatchResult(BaseModel):
     home_score: int
     away_score: int
@@ -62,6 +66,7 @@ def prediction_payload(prediction: Prediction, match: Match) -> dict:
         "final_away_score": match.away_score,
         "prediction_home": prediction.home_score,
         "prediction_away": prediction.away_score,
+        "beers_count": prediction.beers_count,
         "points": prediction.points,
     }
 
@@ -107,7 +112,8 @@ def create_prediction(
         match_id=prediction.match_id,
         home_score=prediction.home_score,
         away_score=prediction.away_score,
-        points=0
+        points=0,
+        beers_count=0,
     )
 
     db.add(new_prediction)
@@ -194,10 +200,51 @@ def get_my_predictions(
             "final_away_score": p.match.away_score,
             "prediction_home": p.home_score,
             "prediction_away": p.away_score,
+            "beers_count": p.beers_count,
             "points": p.points
         }
         for p in predictions
     ]
+
+
+# ==============================
+# UPDATE BEERS
+# ==============================
+
+@router.put("/predictions/{prediction_id}/beers")
+def update_prediction_beers(
+    prediction_id: int,
+    data: BeerUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    prediction = db.query(Prediction).filter(
+        Prediction.id == prediction_id
+    ).first()
+
+    if not prediction:
+        raise HTTPException(status_code=404, detail="Prediction not found")
+
+    if prediction.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="To nie Twój typ")
+
+    match = db.query(Match).filter(
+        Match.id == prediction.match_id
+    ).first()
+
+    prediction.beers_count = data.beers_count
+
+    db.commit()
+    db.refresh(prediction)
+
+    logger.info(
+        "Beer count updated user=%s prediction=%s beers=%s",
+        current_user.id,
+        prediction.id,
+        prediction.beers_count,
+    )
+
+    return prediction_payload(prediction, match)
 
 
 # ==============================
@@ -250,6 +297,37 @@ def leaderboard(db: Session = Depends(get_db)):
             "user_id": r.id,
             "username": r.username,
             "points": int(r.total_points)
+        }
+        for index, r in enumerate(results)
+    ]
+
+
+# ==============================
+# BEER LEADERBOARD
+# ==============================
+
+@router.get("/beer-leaderboard")
+def beer_leaderboard(db: Session = Depends(get_db)):
+    total_beers = func.coalesce(func.sum(Prediction.beers_count), 0)
+
+    results = (
+        db.query(
+            User.id,
+            User.username,
+            total_beers.label("total_beers")
+        )
+        .outerjoin(Prediction, Prediction.user_id == User.id)
+        .group_by(User.id)
+        .order_by(total_beers.desc(), User.username.asc())
+        .all()
+    )
+
+    return [
+        {
+            "position": index + 1,
+            "user_id": r.id,
+            "username": r.username,
+            "beers": int(r.total_beers)
         }
         for index, r in enumerate(results)
     ]

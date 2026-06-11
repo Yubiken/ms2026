@@ -4,42 +4,77 @@ import { apiRequest } from "../api"
 import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
 
+const rankingModes = [
+  { key: "points", label: "Punkty", endpoint: "/leaderboard", valueKey: "points" },
+  { key: "beers", label: "Piwka", endpoint: "/beer-leaderboard", valueKey: "beers" },
+]
+
+const getBeerCountLabel = (count) => {
+  const value = Number(count ?? 0)
+
+  if (value === 1) return "1 piwo"
+  if (value >= 2 && value <= 4) return `${value} piwa`
+
+  return `${value} piwek`
+}
+
 export default function Leaderboard() {
 
-  const [ranking, setRanking] = useState([])
+  const [rankings, setRankings] = useState({
+    points: [],
+    beers: [],
+  })
+  const [activeMode, setActiveMode] = useState("points")
   const [loading, setLoading] = useState(true)
   const currentUser = getUsername()
 
   useEffect(() => {
+    Promise.all([
+      apiRequest("/leaderboard"),
+      apiRequest("/beer-leaderboard"),
+    ])
+      .then(([pointsData, beersData]) => {
+        const buildRanking = (data, valueKey) => {
+          if (!Array.isArray(data)) return []
 
-    apiRequest("/leaderboard")
-      .then(data => {
+          return [...data]
+            .sort((a, b) => Number(b[valueKey] ?? 0) - Number(a[valueKey] ?? 0))
+            .map((user, index) => ({
+              ...user,
+              position: index + 1,
+            }))
+        }
 
-        if (!data) return
-
-        const sorted = [...data].sort((a, b) => b.points - a.points)
-        const withPosition = sorted.map((user, index) => ({
-          ...user,
-          position: index + 1
-        }))
-
-        setRanking(withPosition)
+        setRankings({
+          points: buildRanking(pointsData, "points"),
+          beers: buildRanking(beersData, "beers"),
+        })
         setLoading(false)
       })
       .catch(() => setLoading(false))
-
   }, [])
+
+  const activeConfig = rankingModes.find(mode => mode.key === activeMode) ?? rankingModes[0]
+  const ranking = rankings[activeConfig.key]
+  const valueKey = activeConfig.valueKey
+  const isBeerMode = activeMode === "beers"
 
   if (loading) {
     return <PageLoader title="Ranking Ligi" subtitle="Przeliczam tabelę" cards={5} />
   }
 
   const leader = ranking[0]
-  const leaderPoints = leader?.points ?? 0
+  const leaderValue = Number(leader?.[valueKey] ?? 0)
   const totalPlayers = ranking.length
-  const totalPoints = ranking.reduce((sum, user) => sum + Number(user.points ?? 0), 0)
-  const averagePoints = totalPlayers > 0 ? (totalPoints / totalPlayers).toFixed(1) : "0.0"
+  const totalValue = ranking.reduce((sum, user) => sum + Number(user[valueKey] ?? 0), 0)
+  const averageValue = totalPlayers > 0 ? (totalValue / totalPlayers).toFixed(1) : "0.0"
   const currentUserRank = ranking.find(user => user.username === currentUser)
+
+  const formatValue = (value) => {
+    const normalizedValue = Number(value ?? 0)
+
+    return isBeerMode ? getBeerCountLabel(normalizedValue) : `${normalizedValue} pkt`
+  }
 
   const getMedal = (position) => {
     if (position === 1) return "1"
@@ -59,18 +94,44 @@ export default function Leaderboard() {
 
       <div className="w-full max-w-5xl mx-auto">
 
-        <div className="text-center mb-10">
+        <div className="text-center mb-8">
           <h1 className="section-title text-3xl font-black">
-            Ranking Ligi
+            {isBeerMode ? "Ranking Piwny" : "Ranking Ligi"}
           </h1>
           <div className="h-1 w-40 mx-auto mt-4 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full" />
+        </div>
+
+        <div className="mb-8 flex justify-center">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/10 p-1">
+            {rankingModes.map(mode => {
+              const isActive = mode.key === activeMode
+
+              return (
+                <button
+                  key={mode.key}
+                  type="button"
+                  onClick={() => setActiveMode(mode.key)}
+                  className={`rounded-full px-5 py-2 text-sm font-bold uppercase transition ${
+                    isActive
+                      ? "bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-black"
+                      : "text-gray-300 hover:bg-white/10"
+                  }`}
+                >
+                  {mode.label}
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {ranking.length === 0 ? (
           <EmptyState
             icon="ranking"
             title="Ranking jest jeszcze pusty"
-            description="Tabela zacznie żyć, gdy pojawią się pierwsze typy i rozliczone wyniki."
+            description={isBeerMode
+              ? "Ranking piwny ruszy, gdy ktoś zapisze pierwsze piwka przy meczu."
+              : "Tabela zacznie żyć, gdy pojawią się pierwsze typy i rozliczone wyniki."
+            }
             actionLabel="Przejdź do meczów"
             actionTo="/matches"
           />
@@ -89,7 +150,9 @@ export default function Leaderboard() {
 
               <div className="stadium-panel rounded-2xl p-4">
                 <div className="text-xs uppercase tracking-wide text-gray-400">Średnia</div>
-                <div className="mt-1 text-2xl font-black text-yellow-300">{averagePoints}</div>
+                <div className="mt-1 text-2xl font-black text-yellow-300">
+                  {isBeerMode ? getBeerCountLabel(averageValue) : averageValue}
+                </div>
               </div>
 
               <div className="stadium-panel rounded-2xl p-4">
@@ -114,10 +177,10 @@ export default function Leaderboard() {
                     {user.username}
                   </div>
                   <div className="mt-3 text-3xl font-black text-yellow-400">
-                    {user.points}
+                    {Number(user[valueKey] ?? 0)}
                   </div>
                   <div className="mt-1 text-xs uppercase tracking-wide text-gray-400">
-                    punktów
+                    {isBeerMode ? "piwka" : "punktów"}
                   </div>
                 </div>
               ))}
@@ -129,12 +192,13 @@ export default function Leaderboard() {
               {ranking.map((user) => {
 
                 const isCurrentUser = user.username === currentUser
-                const diff = leaderPoints - user.points
+                const value = Number(user[valueKey] ?? 0)
+                const diff = leaderValue - value
 
                 return (
                   <div
                     key={user.user_id}
-                  className={`match-ticket rounded-2xl p-4 transition-all duration-300 sm:p-5
+                    className={`match-ticket rounded-2xl p-4 transition-all duration-300 sm:p-5
                       ${isCurrentUser
                         ? "border-green-400 bg-green-600/20 shadow-lg"
                         : "border-white/10 bg-white/5 hover:bg-white/10"
@@ -163,7 +227,7 @@ export default function Leaderboard() {
 
                           {!isCurrentUser && diff > 0 && (
                             <div className="mt-1 text-xs text-gray-400">
-                              {diff} pkt do lidera
+                              {formatValue(diff)} do lidera
                             </div>
                           )}
                         </div>
@@ -172,10 +236,10 @@ export default function Leaderboard() {
 
                       <div className="flex-shrink-0 text-right">
                         <div className="text-3xl font-black text-yellow-400">
-                          {user.points}
+                          {value}
                         </div>
                         <div className="text-xs uppercase tracking-wide text-gray-500">
-                          pkt
+                          {isBeerMode ? "piwka" : "pkt"}
                         </div>
                       </div>
 
