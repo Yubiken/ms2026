@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import { useState, useEffect, useCallback } from "react"
 
 import Login from "./pages/Login"
-import Register from "./pages/Register"
 import Matches from "./pages/Matches"
 import MyPredictions from "./pages/MyPredictions"
 import Leaderboard from "./pages/Leaderboard"
@@ -113,7 +112,7 @@ export default function App() {
 
         <Route
           path="/register"
-          element={token ? <Navigate to="/matches" /> : <Register />}
+          element={<Navigate to={token ? "/matches" : "/login"} />}
         />
 
         {/* PROTECTED */}

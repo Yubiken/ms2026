@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate, Link } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { saveToken } from "../auth"
 import toast from "react-hot-toast"
 
@@ -106,16 +106,6 @@ export default function Login({ onLogin }) {
         >
           {loading ? "Logowanie..." : "Zaloguj się"}
         </button>
-
-        <div className="mt-6 text-sm text-gray-400">
-          Nie masz konta?
-          <Link
-            to="/register"
-            className="text-yellow-400 ml-2 hover:text-yellow-300 transition"
-          >
-            Zarejestruj się
-          </Link>
-        </div>
 
       </form>
     </div>
