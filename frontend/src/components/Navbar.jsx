@@ -40,6 +40,14 @@ function NavIcon({ type }) {
     )
   }
 
+  if (type === "champion") {
+    return (
+      <svg {...sharedProps}>
+        <path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5L12 15.6 7.1 18.2l.9-5.5-4-3.9 5.5-.8L12 3Z" />
+      </svg>
+    )
+  }
+
   if (type === "admin") {
     return (
       <svg {...sharedProps}>
@@ -88,6 +96,7 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
         : null,
     },
     { to: "/my-predictions", label: "Moje typy", icon: "predictions" },
+    { to: "/champion", label: "Mistrz", icon: "champion" },
     { to: "/leaderboard", label: "Ranking", icon: "ranking" },
     ...(isAdmin ? [{ to: "/admin", label: "Admin", icon: "admin" }] : []),
   ]
@@ -124,6 +133,10 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
 
                 <Link to="/my-predictions" className="transition hover:text-red-500">
                   Moje Typy
+                </Link>
+
+                <Link to="/champion" className="transition hover:text-red-500">
+                  Mistrz
                 </Link>
 
                 <Link to="/leaderboard" className="transition hover:text-red-500">
@@ -184,7 +197,7 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
 
       {token && (
         <nav className="fixed inset-x-3 bottom-3 z-40 rounded-3xl border border-white/10 bg-[#070b12]/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-white shadow-2xl shadow-black/50 backdrop-blur-xl md:hidden">
-          <div className={`grid gap-1 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}>
+          <div className={`grid gap-1 ${isAdmin ? "grid-cols-5" : "grid-cols-4"}`}>
             {mobileNavItems.map(item => (
               <NavLink
                 key={item.to}

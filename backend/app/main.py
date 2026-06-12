@@ -4,6 +4,7 @@ from .database import Base, engine, ensure_match_external_columns, ensure_predic
 from .routes import users, predictions
 from app.routes import matches
 from app.routes import admin
+from app.routes import champion
 
 Base.metadata.create_all(bind=engine)
 ensure_match_external_columns()
@@ -44,6 +45,7 @@ app.include_router(users.router)
 app.include_router(predictions.router)
 app.include_router(matches.router)
 app.include_router(admin.router)
+app.include_router(champion.router)
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health():

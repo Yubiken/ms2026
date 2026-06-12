@@ -23,6 +23,12 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    champion_pick = relationship(
+        "ChampionPick",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        uselist=False
+    )
 
 
 # ==============================
@@ -89,3 +95,23 @@ class Prediction(Base):
 
     user = relationship("User", back_populates="predictions")
     match = relationship("Match", back_populates="predictions")
+
+
+# ==============================
+# CHAMPION PICK
+# ==============================
+
+class ChampionPick(Base):
+    __tablename__ = "champion_picks"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
+    team_name = Column(String, nullable=False)
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+
+    user = relationship("User", back_populates="champion_pick")

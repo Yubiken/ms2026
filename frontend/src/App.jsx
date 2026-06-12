@@ -5,6 +5,7 @@ import Login from "./pages/Login"
 import Matches from "./pages/Matches"
 import MyPredictions from "./pages/MyPredictions"
 import Leaderboard from "./pages/Leaderboard"
+import Champion from "./pages/Champion"
 import Admin from "./pages/Admin"
 import { isAdminToken } from "./admin"
 import { apiRequest } from "./api"
@@ -129,6 +130,11 @@ export default function App() {
         <Route
           path="/leaderboard"
           element={token ? <Leaderboard /> : <Navigate to="/login" />}
+        />
+
+        <Route
+          path="/champion"
+          element={token ? <Champion /> : <Navigate to="/login" />}
         />
 
         <Route
