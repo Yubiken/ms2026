@@ -468,6 +468,14 @@ export default function Matches({ onPredictionsChange }) {
   )
   const topPrediction = Object.entries(predictionStats.scoreCounts)
     .sort(([scoreA, countA], [scoreB, countB]) => countB - countA || scoreA.localeCompare(scoreB))[0]
+  const sortedMatchPredictions = matchPredictions
+    .slice()
+    .sort((predictionA, predictionB) => {
+      const pointsA = predictionA.points == null ? -1 : Number(predictionA.points)
+      const pointsB = predictionB.points == null ? -1 : Number(predictionB.points)
+
+      return pointsB - pointsA || predictionA.username.localeCompare(predictionB.username, "pl")
+    })
   const hasFinalScore = predictionsModal?.is_finished
     && predictionsModal.home_score != null
     && predictionsModal.away_score != null
@@ -909,7 +917,7 @@ export default function Matches({ onPredictionsChange }) {
                 </div>
 
                 <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
-                  {matchPredictions.map((p, index) => {
+                  {sortedMatchPredictions.map((p, index) => {
                     const isCurrentUser = p.username === currentUsername
 
                     return (
