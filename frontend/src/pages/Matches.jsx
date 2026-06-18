@@ -856,11 +856,12 @@ export default function Matches({ onPredictionsChange }) {
       </div>
 
       {selectedMatch && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-4 pb-4 pt-10 backdrop-blur-sm sm:items-center sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-3 pt-8 backdrop-blur-sm sm:items-center sm:p-6">
 
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111827] p-5 text-left shadow-2xl sm:p-7">
+          <div className="flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#111827] text-left shadow-2xl sm:max-h-[86vh] sm:rounded-3xl">
 
-            <div className="mb-5">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7">
+              <div className="mb-5">
               <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-400">
                 {selectedMatch.group_name && (
                   <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-200">
@@ -924,8 +925,9 @@ export default function Matches({ onPredictionsChange }) {
                 })}
               </div>
             </div>
+            </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
+            <div className="grid flex-shrink-0 grid-cols-2 gap-3 border-t border-white/10 bg-[#111827] p-5 sm:p-7">
               <button
                 type="button"
                 onClick={() => setSelectedMatch(null)}
@@ -947,11 +949,12 @@ export default function Matches({ onPredictionsChange }) {
       )}
 
       {predictionsModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-4 pb-4 pt-10 backdrop-blur-sm sm:items-center sm:p-6">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-3 pt-8 backdrop-blur-sm sm:items-center sm:p-6">
 
-          <div className="w-full max-w-md rounded-3xl border border-white/10 bg-[#111827] p-5 shadow-2xl sm:p-7">
+          <div className="flex max-h-[92dvh] w-full max-w-md flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#111827] shadow-2xl sm:max-h-[86vh] sm:rounded-3xl">
 
-            <div className="mb-5 text-center">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7">
+              <div className="mb-5 text-center">
               <h2 className="text-2xl font-black">
                 Typy użytkowników
               </h2>
@@ -1009,7 +1012,7 @@ export default function Matches({ onPredictionsChange }) {
                   </div>
                 </div>
 
-                <div className="max-h-80 space-y-2 overflow-y-auto pr-1">
+                <div className="space-y-2">
                   {sortedMatchPredictions.map((p, index) => {
                     const isCurrentUser = p.username === currentUsername
 
@@ -1035,8 +1038,9 @@ export default function Matches({ onPredictionsChange }) {
                 </div>
               </>
             )}
+            </div>
 
-            <div className="mt-6 text-center">
+            <div className="flex-shrink-0 border-t border-white/10 bg-[#111827] p-5 text-center sm:p-7">
               <button
                 type="button"
                 onClick={() => setPredictionsModal(null)}
