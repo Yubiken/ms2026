@@ -86,6 +86,26 @@ export default function Leaderboard() {
     return position
   }
 
+  const getHistoryForm = (predictions) => {
+    const settledPredictions = predictions
+      .filter(prediction => prediction.points != null)
+      .slice(0, 5)
+    const formPoints = settledPredictions.map(prediction => Number(prediction.points ?? 0))
+    const totalFormPoints = formPoints.reduce((sum, points) => sum + points, 0)
+    const scoredCount = formPoints.filter(points => points > 0).length
+    const exactCount = formPoints.filter(points => points === 2).length
+    const hitRate = formPoints.length > 0
+      ? Math.round((scoredCount / formPoints.length) * 100)
+      : 0
+
+    return {
+      formPoints,
+      totalFormPoints,
+      exactCount,
+      hitRate,
+    }
+  }
+
   const openHistory = async (user) => {
     setHistoryLoading(true)
     setHistoryError("")
@@ -317,6 +337,63 @@ export default function Leaderboard() {
               />
             ) : (
               <>
+                {(() => {
+                  const form = getHistoryForm(historyModal.predictions)
+
+                  return (
+                    <div className="mb-4 rounded-2xl border border-yellow-400/20 bg-yellow-500/10 p-4">
+                      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <div className="text-xs font-bold uppercase tracking-wide text-yellow-300">
+                            Forma gracza
+                          </div>
+                          <div className="mt-1 text-sm font-semibold text-gray-300">
+                            Ostatnie 5 rozliczonych typów
+                          </div>
+                        </div>
+
+                        <div className="flex gap-1">
+                          {form.formPoints.length > 0 ? (
+                            form.formPoints.map((points, index) => (
+                              <span
+                                key={`${points}-${index}`}
+                                className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-black ${
+                                  points === 2
+                                    ? "bg-green-500 text-white"
+                                    : points === 1
+                                      ? "bg-yellow-400 text-black"
+                                      : "bg-white/10 text-gray-300"
+                                }`}
+                              >
+                                {points}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-sm font-semibold text-gray-400">
+                              Brak rozliczonych typów
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-2xl bg-black/20 p-3">
+                          <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Seria</div>
+                          <div className="mt-1 text-xl font-black text-yellow-300">{form.totalFormPoints}</div>
+                        </div>
+                        <div className="rounded-2xl bg-black/20 p-3">
+                          <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Skuteczność</div>
+                          <div className="mt-1 text-xl font-black text-green-300">{form.hitRate}%</div>
+                        </div>
+                        <div className="rounded-2xl bg-black/20 p-3">
+                          <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Dokładne</div>
+                          <div className="mt-1 text-xl font-black text-orange-300">{form.exactCount}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+
                 <div className="mb-4 grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                     <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Punkty</div>
