@@ -775,19 +775,19 @@ export default function Matches({ onPredictionsChange }) {
                         <div
                           id={`match-${match.id}`}
                           key={match.id}
-                          className="match-ticket w-full rounded-2xl p-4 pl-6 transition duration-300 hover:-translate-y-0.5 sm:p-6 sm:pl-8"
+                          className="match-ticket w-full rounded-2xl p-3 pl-5 transition duration-300 hover:-translate-y-0.5 sm:p-6 sm:pl-8"
                         >
                           <span className={`group-strip ${groupColors[match.group_name] || "bg-white/40"}`} />
 
-                          <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4">
                             <div className="min-w-0 w-full">
-                              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-400">
+                              <div className="mb-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-gray-400 sm:mb-2 sm:gap-2 sm:text-xs">
                                 {match.group_name && (
-                                  <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-200">
+                                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-gray-200 sm:px-2.5 sm:py-1">
                                     Grupa {match.group_name}
                                   </span>
                                 )}
-                                <span className={`rounded-full border px-2.5 py-1 ${status.className}`}>
+                                <span className={`rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 ${status.className}`}>
                                   {status.label}
                                 </span>
                                 <span>
@@ -800,21 +800,21 @@ export default function Matches({ onPredictionsChange }) {
                                 </span>
                               </div>
 
-                              <div className="text-lg font-black tracking-wide break-words sm:text-xl">
+                              <div className="text-base font-black leading-snug tracking-wide break-words sm:text-xl">
                                 {match.home_team}
-                                <span className="mx-2 text-gray-500">vs</span>
+                                <span className="mx-1.5 text-gray-500 sm:mx-2">vs</span>
                                 {match.away_team}
                               </div>
 
                               {(!isStarted || myPrediction) && (
-                                <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold">
+                                <div className="mt-2 flex flex-wrap items-center gap-1.5 text-xs font-semibold sm:mt-3 sm:gap-2 sm:text-sm">
                                   {!isStarted && hasMatchPredictionCount(match.predictions_count) && (
-                                    <span className="rounded-full border border-green-400/25 bg-green-500/15 px-2.5 py-1 text-green-300">
+                                    <span className="rounded-full border border-green-400/25 bg-green-500/15 px-2 py-0.5 text-green-300 sm:px-2.5 sm:py-1">
                                       {getMatchPredictionCountLabel(match.predictions_count)}
                                     </span>
                                   )}
                                   {myPrediction && (
-                                    <span className="rounded-full border border-yellow-400/25 bg-yellow-500/15 px-2.5 py-1 text-yellow-300">
+                                    <span className="rounded-full border border-yellow-400/25 bg-yellow-500/15 px-2 py-0.5 text-yellow-300 sm:px-2.5 sm:py-1">
                                       Twój typ: {myPrediction.prediction_home}:{myPrediction.prediction_away}
                                     </span>
                                   )}
@@ -822,18 +822,18 @@ export default function Matches({ onPredictionsChange }) {
                               )}
                             </div>
 
-                            <div className="w-full sm:w-auto sm:flex-shrink-0">
+                            <div className="flex-shrink-0">
                               {!isStarted ? (
                                 <button
                                   onClick={() => openModal(match)}
-                                  className={`w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm transition shadow-lg ${predictionButtonClass}`}
+                                  className={`rounded-full px-3 py-2 text-xs font-bold uppercase shadow-lg transition sm:px-5 sm:text-sm ${predictionButtonClass}`}
                                 >
                                   {myPrediction ? "Edytuj" : "Typuj"}
                                 </button>
                               ) : (
                                 <button
                                   onClick={() => fetchMatchPredictions(match)}
-                                  className="w-full sm:w-auto px-5 py-2 rounded-full font-bold uppercase text-sm bg-gray-600 hover:bg-gray-500 text-white transition shadow-lg"
+                                  className="rounded-full bg-gray-600 px-3 py-2 text-xs font-bold uppercase text-white shadow-lg transition hover:bg-gray-500 sm:px-5 sm:text-sm"
                                 >
                                   Zobacz typy
                                 </button>
