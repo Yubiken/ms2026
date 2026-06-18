@@ -158,10 +158,30 @@ export default function Champion() {
                   description="Podsumowanie pojawi się po pierwszych wyborach."
                 />
               ) : (
-                <div className="space-y-3">
-                  {summary.map(item => {
+                <div className="space-y-4">
+                  {summary[0] && (
+                    <div className="rounded-2xl border border-yellow-400/30 bg-yellow-500/10 p-4">
+                      <div className="text-xs font-black uppercase tracking-wide text-yellow-300">
+                        Najczęściej wybierany mistrz
+                      </div>
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="break-words text-3xl font-black text-white">
+                          {summary[0].team_name}
+                        </div>
+                        <div className="text-sm font-bold text-gray-300">
+                          {getVoteLabel(summary[0].votes)}
+                          <span className="mx-2 text-gray-600">·</span>
+                          {totalVotes > 0 ? Math.round((summary[0].votes / totalVotes) * 100) : 0}%
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {summary.map((item, index) => {
                     const width = topVotes > 0 ? `${Math.max(10, Math.round((item.votes / topVotes) * 100))}%` : "10%"
+                    const percentage = totalVotes > 0 ? Math.round((item.votes / totalVotes) * 100) : 0
                     const isOwnPick = item.team_name === pick.team_name
+                    const isLeader = index === 0
 
                     return (
                       <div
@@ -169,13 +189,23 @@ export default function Champion() {
                         className={`rounded-2xl border p-4 ${
                           isOwnPick
                             ? "border-green-400/50 bg-green-500/10"
-                            : "border-white/10 bg-white/[0.04]"
+                            : isLeader
+                              ? "border-yellow-400/30 bg-yellow-500/10"
+                              : "border-white/10 bg-white/[0.04]"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0 truncate font-bold">{item.team_name}</div>
-                          <div className="flex-shrink-0 text-sm font-black text-yellow-300">
-                            {getVoteLabel(item.votes)}
+                          <div className="min-w-0">
+                            <div className="truncate font-bold">{item.team_name}</div>
+                            {isLeader && (
+                              <div className="mt-1 text-xs font-bold uppercase tracking-wide text-yellow-300">
+                                Lider głosowania
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-shrink-0 text-right text-sm font-black text-yellow-300">
+                            <div>{getVoteLabel(item.votes)}</div>
+                            <div className="text-xs text-gray-400">{percentage}%</div>
                           </div>
                         </div>
                         <div className="mt-3 h-2 overflow-hidden rounded-full bg-white/10">
