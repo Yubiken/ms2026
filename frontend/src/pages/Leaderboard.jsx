@@ -293,9 +293,9 @@ export default function Leaderboard() {
       </div>
 
       {historyModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-4 pb-4 pt-10 backdrop-blur-sm sm:items-center sm:p-6">
-          <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#111827] p-5 shadow-2xl sm:p-7">
-            <div className="mb-5 flex items-start justify-between gap-4">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-3 pt-8 backdrop-blur-sm sm:items-center sm:p-6">
+          <div className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#111827] shadow-2xl sm:max-h-[86vh] sm:rounded-3xl">
+            <div className="flex flex-shrink-0 items-start justify-between gap-4 border-b border-white/10 bg-[#111827] p-5 sm:p-7">
               <div className="min-w-0">
                 <div className="text-xs font-bold uppercase tracking-wide text-gray-500">
                   Historia gracza
@@ -317,26 +317,27 @@ export default function Leaderboard() {
               </button>
             </div>
 
-            {historyLoading ? (
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-center font-semibold text-gray-300">
-                Ładuję historię...
-              </div>
-            ) : historyError ? (
-              <EmptyState
-                compact
-                icon="predictions"
-                title="Historia chwilowo niedostępna"
-                description={historyError}
-              />
-            ) : historyModal.predictions.length === 0 ? (
-              <EmptyState
-                compact
-                icon="predictions"
-                title="Brak widocznej historii"
-                description="Typy gracza będą widoczne po starcie obstawionych meczów."
-              />
-            ) : (
-              <>
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7">
+              {historyLoading ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-center font-semibold text-gray-300">
+                  Ładuję historię...
+                </div>
+              ) : historyError ? (
+                <EmptyState
+                  compact
+                  icon="predictions"
+                  title="Historia chwilowo niedostępna"
+                  description={historyError}
+                />
+              ) : historyModal.predictions.length === 0 ? (
+                <EmptyState
+                  compact
+                  icon="predictions"
+                  title="Brak widocznej historii"
+                  description="Typy gracza będą widoczne po starcie obstawionych meczów."
+                />
+              ) : (
+                <>
                 {(() => {
                   const form = getHistoryForm(historyModal.predictions)
 
@@ -407,7 +408,7 @@ export default function Leaderboard() {
                   </div>
                 </div>
 
-                <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+                <div className="space-y-3">
                   {historyModal.predictions.map(prediction => {
                     const hasFinalScore = prediction.is_finished
                       && prediction.final_home_score != null
@@ -459,8 +460,9 @@ export default function Leaderboard() {
                     )
                   })}
                 </div>
-              </>
-            )}
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}
