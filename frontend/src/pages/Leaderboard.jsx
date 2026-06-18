@@ -205,7 +205,7 @@ export default function Leaderboard() {
                     type="button"
                     key={user.user_id}
                     onClick={() => openHistory(user)}
-                    className={`match-ticket w-full rounded-2xl p-4 text-left transition-all duration-300 sm:p-5
+                    className={`group match-ticket w-full rounded-2xl p-4 text-left transition-all duration-300 sm:p-5
                       ${isCurrentUser
                         ? "border-green-400 bg-green-600/20 shadow-lg"
                         : "border-white/10 bg-white/5 hover:bg-white/10"
@@ -237,16 +237,26 @@ export default function Leaderboard() {
                               {formatValue(diff)} do lidera
                             </div>
                           )}
+
+                          <div className="mt-1 text-xs font-semibold text-gray-500">
+                            Kliknij, aby zobaczyć historię
+                          </div>
                         </div>
 
                       </div>
 
-                      <div className="flex-shrink-0 text-right">
-                        <div className="text-3xl font-black text-yellow-400">
-                          {value}
+                      <div className="flex flex-shrink-0 items-center gap-3 text-right">
+                        <div>
+                          <div className="text-3xl font-black text-yellow-400">
+                            {value}
+                          </div>
+                          <div className="text-xs uppercase tracking-wide text-gray-500">
+                            {isBeerMode ? "piwka" : "pkt"}
+                          </div>
                         </div>
-                        <div className="text-xs uppercase tracking-wide text-gray-500">
-                          {isBeerMode ? "piwka" : "pkt"}
+
+                        <div className="text-2xl font-black text-gray-500 transition group-hover:text-yellow-300">
+                          ›
                         </div>
                       </div>
 
