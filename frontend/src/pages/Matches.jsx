@@ -418,12 +418,19 @@ export default function Matches({ onPredictionsChange }) {
     .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
 
   const now = new Date()
-  const todayKey = getDayKey(now)
   const nextMatch = sortedMatches.find(match => !match.is_finished && new Date(match.start_time) > now)
   const nextMatchPrediction = nextMatch
     ? myPredictions.find(prediction => prediction.match_id === nextMatch.id)
     : null
-  const todayMatchesCount = matches.filter(match => getDayKey(new Date(match.start_time)) === todayKey).length
+  const predictedMatchesCount = matches.filter(match =>
+    myPredictions.some(prediction => prediction.match_id === match.id)
+  ).length
+  const predictionProgressPercent = matches.length > 0
+    ? Math.round((predictedMatchesCount / matches.length) * 100)
+    : 0
+  const missingPredictionsCount = statusCounts.todo || 0
+  const activeStatusLabel = statusFilters.find(filter => filter.key === activeStatusFilter)?.label || "Wszystkie"
+  const activeGroupLabel = activeGroupFilter === "all" ? "Wszystkie grupy" : `Grupa ${activeGroupFilter}`
 
   const matchGroups = Object.entries(
     filteredMatches
@@ -546,7 +553,7 @@ export default function Matches({ onPredictionsChange }) {
           <div className="h-1 w-32 mx-auto mt-3 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full" />
         </div>
 
-        <div className="mb-6 grid gap-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr]">
+        <div className="mb-6">
           <div className="stadium-panel relative overflow-hidden rounded-2xl p-5">
             <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
@@ -620,74 +627,99 @@ export default function Matches({ onPredictionsChange }) {
               )}
             </div>
           </div>
+        </div>
 
-          <div className="stadium-panel rounded-2xl p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-400">Do typowania</div>
-            <div className="mt-1 text-3xl font-black text-green-300">{statusCounts.todo || 0}</div>
-            <div className="mt-2 text-xs font-semibold text-gray-500">jeszcze przed startem</div>
+        <div className="stadium-panel mb-6 rounded-2xl p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                Postęp typowania
+              </div>
+              <div className="mt-1 text-2xl font-black text-white">
+                {predictedMatchesCount} / {matches.length} meczów
+              </div>
+            </div>
+
+            <div className="text-sm font-semibold text-gray-300">
+              {missingPredictionsCount > 0
+                ? `Zostało ${missingPredictionsCount} do obstawienia`
+                : "Wszystko, co dostępne, jest obstawione"}
+            </div>
           </div>
 
-          <div className="stadium-panel rounded-2xl p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-400">Dzisiaj</div>
-            <div className="mt-1 text-3xl font-black text-yellow-300">{todayMatchesCount}</div>
-            <div className="mt-2 text-xs font-semibold text-gray-500">mecze w kalendarzu</div>
+          <div className="mt-4 h-3 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-green-500 via-yellow-400 to-orange-500 transition-all duration-500"
+              style={{ width: `${predictionProgressPercent}%` }}
+            />
           </div>
 
-          <div className="stadium-panel rounded-2xl p-4">
-            <div className="text-xs uppercase tracking-wide text-gray-400">Obstawione</div>
-            <div className="mt-1 text-3xl font-black text-orange-300">{statusCounts.predicted || 0}</div>
-            <div className="mt-2 text-xs font-semibold text-gray-500">aktywne typy</div>
+          <div className="mt-2 text-right text-xs font-bold uppercase tracking-wide text-green-300">
+            {predictionProgressPercent}%
           </div>
         </div>
 
-        <div className="stadium-panel mb-8 rounded-2xl p-4">
-          <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
-            {statusFilters.map(filter => {
-              const isActive = activeStatusFilter === filter.key
+        <details className="stadium-panel mb-8 rounded-2xl p-4">
+          <summary className="cursor-pointer list-none">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-sm font-black uppercase tracking-wide text-white">
+                Filtry
+              </div>
+              <div className="text-xs font-semibold text-gray-400">
+                {activeStatusLabel} · {activeGroupLabel}
+              </div>
+            </div>
+          </summary>
 
-              return (
-                <button
-                  key={filter.key}
-                  onClick={() => setActiveStatusFilter(filter.key)}
-                  className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
-                    isActive
-                      ? "bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-black"
-                      : "bg-white/10 text-gray-300 hover:bg-white/15"
-                  }`}
-                >
-                  {filter.label}
-                </button>
-              )
-            })}
-          </div>
+          <div className="mt-4 border-t border-white/10 pt-4">
+            <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+              {statusFilters.map(filter => {
+                const isActive = activeStatusFilter === filter.key
 
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <button
-              onClick={() => setActiveGroupFilter("all")}
-              className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
-                activeGroupFilter === "all"
-                  ? "bg-white text-black"
-                  : "bg-white/10 text-gray-300 hover:bg-white/15"
-              }`}
-            >
-              Wszystkie grupy
-            </button>
+                return (
+                  <button
+                    key={filter.key}
+                    onClick={() => setActiveStatusFilter(filter.key)}
+                    className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
+                      isActive
+                        ? "bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-black"
+                        : "bg-white/10 text-gray-300 hover:bg-white/15"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                )
+              })}
+            </div>
 
-            {groupFilters.map(group => (
+            <div className="flex gap-2 overflow-x-auto pb-1">
               <button
-                key={group}
-                onClick={() => setActiveGroupFilter(group)}
+                onClick={() => setActiveGroupFilter("all")}
                 className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
-                  activeGroupFilter === group
-                    ? `${groupColors[group]} text-black`
+                  activeGroupFilter === "all"
+                    ? "bg-white text-black"
                     : "bg-white/10 text-gray-300 hover:bg-white/15"
                 }`}
               >
-                {group}
+                Wszystkie grupy
               </button>
-            ))}
+
+              {groupFilters.map(group => (
+                <button
+                  key={group}
+                  onClick={() => setActiveGroupFilter(group)}
+                  className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
+                    activeGroupFilter === group
+                      ? `${groupColors[group]} text-black`
+                      : "bg-white/10 text-gray-300 hover:bg-white/15"
+                  }`}
+                >
+                  {group}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        </details>
 
         {matchGroups.length === 0 ? (
           <EmptyState
