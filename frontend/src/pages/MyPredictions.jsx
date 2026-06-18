@@ -50,7 +50,7 @@ export default function MyPredictions() {
 
   const getStatusLabel = (status) => {
     if (status === "finished") return "Rozliczony"
-    if (status === "locked") return "Zamkniety"
+    if (status === "locked") return "Zamknięty"
     return "Do edycji"
   }
 
@@ -126,7 +126,7 @@ export default function MyPredictions() {
         [prediction.id]: String(data.beers_count ?? beersCount),
       }))
     } catch {
-      toast.error("Nie udalo sie zapisac piwek")
+      toast.error("Nie udało się zapisać piwek")
     } finally {
       setSavingBeerId(null)
     }
@@ -145,7 +145,7 @@ export default function MyPredictions() {
   }
 
   if (loading) {
-    return <PageLoader title="Moje Typy" subtitle="Zbieram Twoje typy i punkty" cards={3} />
+    return <PageLoader title="Moje typy" subtitle="Zbieram Twoje typy i punkty" cards={3} />
   }
 
   const sortedPredictions = predictions
@@ -167,7 +167,7 @@ export default function MyPredictions() {
         <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="section-title text-4xl font-black">
-              Moje Typy
+              Moje typy
             </h1>
             <div className="mt-3 h-1 w-32 rounded-full bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500" />
           </div>
@@ -191,9 +191,9 @@ export default function MyPredictions() {
         {predictions.length === 0 ? (
           <EmptyState
             icon="predictions"
-            title="Nie masz jeszcze zadnych typow"
-            description="Przejdz do listy meczow i obstaw pierwsze wyniki."
-            actionLabel="Przejdz do meczow"
+            title="Nie masz jeszcze żadnych typów"
+            description="Przejdź do listy meczów i obstaw pierwsze wyniki."
+            actionLabel="Przejdź do meczów"
             actionTo="/matches"
           />
         ) : (
@@ -269,7 +269,7 @@ export default function MyPredictions() {
                             onClick={() => adjustBeerCount(prediction, -1)}
                             disabled={isSavingBeer || clampBeerCount(beerValue) <= 0}
                             className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-lg font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-35"
-                            aria-label="Zmniejsz liczbe piwek"
+                            aria-label="Zmniejsz liczbę piwek"
                           >
                             -
                           </button>
@@ -293,7 +293,7 @@ export default function MyPredictions() {
                             onClick={() => adjustBeerCount(prediction, 1)}
                             disabled={isSavingBeer || clampBeerCount(beerValue) >= 99}
                             className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-lg font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-35"
-                            aria-label="Zwieksz liczbe piwek"
+                            aria-label="Zwiększ liczbę piwek"
                           >
                             +
                           </button>
