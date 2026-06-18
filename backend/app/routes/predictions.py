@@ -302,6 +302,51 @@ def leaderboard(db: Session = Depends(get_db)):
     ]
 
 
+@router.get("/leaderboard/{user_id}/history")
+def leaderboard_user_history(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    now = datetime.now(timezone.utc)
+    predictions = (
+        db.query(Prediction)
+        .join(Match)
+        .filter(Prediction.user_id == user_id)
+        .order_by(Match.start_time.desc())
+        .all()
+    )
+    visible_predictions = [
+        prediction
+        for prediction in predictions
+        if to_utc(prediction.match.start_time) <= now
+    ]
+
+    return {
+        "user_id": user.id,
+        "username": user.username,
+        "points": sum(int(prediction.points or 0) for prediction in visible_predictions),
+        "beers": sum(int(prediction.beers_count or 0) for prediction in visible_predictions),
+        "predictions": [
+            {
+                "match_id": prediction.match.id,
+                "home_team": prediction.match.home_team,
+                "away_team": prediction.match.away_team,
+                "start_time": prediction.match.start_time,
+                "is_finished": prediction.match.is_finished,
+                "final_home_score": prediction.match.home_score,
+                "final_away_score": prediction.match.away_score,
+                "prediction_home": prediction.home_score,
+                "prediction_away": prediction.away_score,
+                "beers_count": prediction.beers_count,
+                "points": prediction.points if prediction.match.is_finished else None,
+            }
+            for prediction in visible_predictions
+        ],
+    }
+
+
 # ==============================
 # BEER LEADERBOARD
 # ==============================

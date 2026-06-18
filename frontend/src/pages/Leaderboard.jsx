@@ -26,6 +26,8 @@ export default function Leaderboard() {
   })
   const [activeMode, setActiveMode] = useState("points")
   const [loading, setLoading] = useState(true)
+  const [historyModal, setHistoryModal] = useState(null)
+  const [historyLoading, setHistoryLoading] = useState(false)
   const currentUser = getUsername()
 
   useEffect(() => {
@@ -81,6 +83,29 @@ export default function Leaderboard() {
     if (position === 2) return "2"
     if (position === 3) return "3"
     return position
+  }
+
+  const openHistory = async (user) => {
+    setHistoryLoading(true)
+    setHistoryModal({
+      username: user.username,
+      predictions: [],
+      points: 0,
+      beers: 0,
+    })
+
+    try {
+      const data = await apiRequest(`/leaderboard/${user.user_id}/history`)
+
+      if (!data) {
+        setHistoryModal(null)
+        return
+      }
+
+      setHistoryModal(data)
+    } finally {
+      setHistoryLoading(false)
+    }
   }
 
   return (
@@ -166,9 +191,11 @@ export default function Leaderboard() {
                 const diff = leaderValue - value
 
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={user.user_id}
-                    className={`match-ticket rounded-2xl p-4 transition-all duration-300 sm:p-5
+                    onClick={() => openHistory(user)}
+                    className={`match-ticket w-full rounded-2xl p-4 text-left transition-all duration-300 sm:p-5
                       ${isCurrentUser
                         ? "border-green-400 bg-green-600/20 shadow-lg"
                         : "border-white/10 bg-white/5 hover:bg-white/10"
@@ -215,7 +242,7 @@ export default function Leaderboard() {
 
                     </div>
 
-                  </div>
+                  </button>
                 )
               })}
 
@@ -224,6 +251,112 @@ export default function Leaderboard() {
         )}
 
       </div>
+
+      {historyModal && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-4 pb-4 pt-10 backdrop-blur-sm sm:items-center sm:p-6">
+          <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-[#111827] p-5 shadow-2xl sm:p-7">
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-xs font-bold uppercase tracking-wide text-gray-500">
+                  Historia gracza
+                </div>
+                <h2 className="mt-1 truncate text-2xl font-black">
+                  {historyModal.username}
+                </h2>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setHistoryModal(null)}
+                className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-gray-200 transition hover:bg-white/15"
+              >
+                Zamknij
+              </button>
+            </div>
+
+            {historyLoading ? (
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-center font-semibold text-gray-300">
+                Ładuję historię...
+              </div>
+            ) : historyModal.predictions.length === 0 ? (
+              <EmptyState
+                compact
+                icon="predictions"
+                title="Brak widocznej historii"
+                description="Typy gracza będą widoczne po starcie obstawionych meczów."
+              />
+            ) : (
+              <>
+                <div className="mb-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Punkty</div>
+                    <div className="mt-1 text-2xl font-black text-yellow-300">{historyModal.points}</div>
+                  </div>
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                    <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Piwka</div>
+                    <div className="mt-1 text-2xl font-black text-green-300">
+                      {getBeerCountLabel(historyModal.beers)}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="max-h-[60vh] space-y-3 overflow-y-auto pr-1">
+                  {historyModal.predictions.map(prediction => {
+                    const hasFinalScore = prediction.is_finished
+                      && prediction.final_home_score != null
+                      && prediction.final_away_score != null
+
+                    return (
+                      <div
+                        key={`${prediction.match_id}-${prediction.start_time}`}
+                        className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+                      >
+                        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-500">
+                          <span>
+                            {new Date(prediction.start_time).toLocaleString("pl-PL", {
+                              day: "2-digit",
+                              month: "2-digit",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                          {prediction.points != null && (
+                            <span className="rounded-full bg-yellow-500/15 px-2 py-1 text-yellow-300">
+                              +{prediction.points} pkt
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="font-black text-white">
+                          {prediction.home_team}
+                          <span className="mx-2 text-gray-500">vs</span>
+                          {prediction.away_team}
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2 text-sm font-semibold">
+                          <span className="rounded-full border border-yellow-400/25 bg-yellow-500/15 px-2.5 py-1 text-yellow-300">
+                            Typ: {prediction.prediction_home}:{prediction.prediction_away}
+                          </span>
+                          {hasFinalScore && (
+                            <span className="rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-gray-200">
+                              Wynik: {prediction.final_home_score}:{prediction.final_away_score}
+                            </span>
+                          )}
+                          {Number(prediction.beers_count ?? 0) > 0 && (
+                            <span className="rounded-full border border-green-400/25 bg-green-500/15 px-2.5 py-1 text-green-300">
+                              {getBeerCountLabel(prediction.beers_count)}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   )
