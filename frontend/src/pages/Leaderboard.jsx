@@ -83,12 +83,6 @@ export default function Leaderboard() {
     return position
   }
 
-  const getPodiumClass = (position) => {
-    if (position === 1) return "border-yellow-400 bg-yellow-400/10"
-    if (position === 2) return "border-slate-300 bg-slate-300/10"
-    return "border-orange-400 bg-orange-400/10"
-  }
-
   return (
     <div className="min-h-screen overflow-x-hidden px-4 py-8 text-white sm:px-6 sm:py-12">
 
@@ -161,30 +155,6 @@ export default function Leaderboard() {
                   {currentUserRank ? `#${currentUserRank.position}` : "-"}
                 </div>
               </div>
-            </div>
-
-            <div className="grid gap-4 mb-10 md:grid-cols-3">
-
-              {ranking.slice(0, 3).map((user) => (
-                <div
-                  key={user.user_id}
-                  className={`rounded-2xl border p-5 text-center shadow-xl ${getPodiumClass(user.position)}`}
-                >
-                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-xl font-black">
-                    {getMedal(user.position)}
-                  </div>
-                  <div className="truncate text-xl font-bold">
-                    {user.username}
-                  </div>
-                  <div className="mt-3 text-3xl font-black text-yellow-400">
-                    {Number(user[valueKey] ?? 0)}
-                  </div>
-                  <div className="mt-1 text-xs uppercase tracking-wide text-gray-400">
-                    {isBeerMode ? "piwka" : "punktów"}
-                  </div>
-                </div>
-              ))}
-
             </div>
 
             <div className="space-y-3">

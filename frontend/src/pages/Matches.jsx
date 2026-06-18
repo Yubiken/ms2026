@@ -126,6 +126,7 @@ export default function Matches({ onPredictionsChange }) {
   const [selectedMatch, setSelectedMatch] = useState(null)
   const [homeScore, setHomeScore] = useState("")
   const [awayScore, setAwayScore] = useState("")
+  const [pendingScrollMatchId, setPendingScrollMatchId] = useState(null)
 
   const [predictionsModal, setPredictionsModal] = useState(null)
   const [matchPredictions, setMatchPredictions] = useState([])
@@ -480,6 +481,55 @@ export default function Matches({ onPredictionsChange }) {
     && predictionsModal.home_score != null
     && predictionsModal.away_score != null
 
+  const scrollToMatch = (matchId) => {
+    const match = matches.find(item => item.id === matchId)
+
+    if (!match) return
+
+    if (activeStatusFilter !== "all" && getMatchState(match) !== activeStatusFilter) {
+      setActiveStatusFilter("all")
+    }
+
+    if (activeGroupFilter !== "all" && match.group_name !== activeGroupFilter) {
+      setActiveGroupFilter("all")
+    }
+
+    setPendingScrollMatchId(matchId)
+  }
+
+  useEffect(() => {
+    if (!pendingScrollMatchId) return
+
+    const timeoutId = window.setTimeout(() => {
+      const element = document.getElementById(`match-${pendingScrollMatchId}`)
+
+      if (!element) return
+
+      element.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      })
+
+      if (typeof element.animate === "function") {
+        element.animate(
+          [
+            { boxShadow: "0 0 0 0 rgba(34, 197, 94, 0)" },
+            { boxShadow: "0 0 0 4px rgba(34, 197, 94, 0.55)" },
+            { boxShadow: "0 0 0 0 rgba(34, 197, 94, 0)" },
+          ],
+          {
+            duration: 1100,
+            easing: "ease-out",
+          }
+        )
+      }
+
+      setPendingScrollMatchId(null)
+    }, 80)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [pendingScrollMatchId, matchGroups])
+
   if (loading) {
     return <PageLoader title="Mecze" subtitle="Ładuję terminarz i Twoje typy" cards={5} />
   }
@@ -546,17 +596,27 @@ export default function Matches({ onPredictionsChange }) {
               </div>
 
               {nextMatch && (
-                <button
-                  type="button"
-                  onClick={() => openModal(nextMatch)}
-                  className={`w-full flex-shrink-0 rounded-full px-5 py-3 text-sm font-bold uppercase shadow-lg transition sm:w-auto ${
-                    nextMatchPrediction
-                      ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600"
-                      : "bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:from-green-700 hover:to-emerald-600"
-                  }`}
-                >
-                  {nextMatchPrediction ? "Edytuj" : "Typuj"}
-                </button>
+                <div className="grid w-full flex-shrink-0 gap-2 sm:w-auto">
+                  <button
+                    type="button"
+                    onClick={() => scrollToMatch(nextMatch.id)}
+                    className="w-full rounded-full border border-green-400/35 bg-green-500/15 px-5 py-3 text-sm font-bold uppercase text-green-200 shadow-lg shadow-green-500/10 transition hover:bg-green-500/25 sm:w-auto"
+                  >
+                    Przejdź
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openModal(nextMatch)}
+                    className={`w-full rounded-full px-5 py-3 text-sm font-bold uppercase shadow-lg transition sm:w-auto ${
+                      nextMatchPrediction
+                        ? "bg-gradient-to-r from-orange-500 to-amber-500 text-white hover:from-orange-600 hover:to-amber-600"
+                        : "bg-gradient-to-r from-green-600 to-emerald-500 text-white hover:from-green-700 hover:to-emerald-600"
+                    }`}
+                  >
+                    {nextMatchPrediction ? "Edytuj" : "Typuj"}
+                  </button>
+                </div>
               )}
             </div>
           </div>
@@ -681,6 +741,7 @@ export default function Matches({ onPredictionsChange }) {
 
                       return (
                         <div
+                          id={`match-${match.id}`}
                           key={match.id}
                           className="match-ticket w-full rounded-2xl p-4 pl-6 transition duration-300 hover:-translate-y-0.5 sm:p-6 sm:pl-8"
                         >
