@@ -28,6 +28,7 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true)
   const [historyModal, setHistoryModal] = useState(null)
   const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState("")
   const currentUser = getUsername()
 
   useEffect(() => {
@@ -87,6 +88,7 @@ export default function Leaderboard() {
 
   const openHistory = async (user) => {
     setHistoryLoading(true)
+    setHistoryError("")
     setHistoryModal({
       username: user.username,
       predictions: [],
@@ -97,12 +99,20 @@ export default function Leaderboard() {
     try {
       const data = await apiRequest(`/leaderboard/${user.user_id}/history`)
 
-      if (!data) {
-        setHistoryModal(null)
+      if (!data || !Array.isArray(data.predictions)) {
+        setHistoryModal({
+          username: user.username,
+          predictions: [],
+          points: 0,
+          beers: 0,
+        })
+        setHistoryError("Nie udało się pobrać historii tego gracza.")
         return
       }
 
       setHistoryModal(data)
+    } catch {
+      setHistoryError("Nie udało się pobrać historii tego gracza.")
     } finally {
       setHistoryLoading(false)
     }
@@ -267,7 +277,10 @@ export default function Leaderboard() {
 
               <button
                 type="button"
-                onClick={() => setHistoryModal(null)}
+                onClick={() => {
+                  setHistoryModal(null)
+                  setHistoryError("")
+                }}
                 className="rounded-full bg-white/10 px-4 py-2 text-sm font-bold text-gray-200 transition hover:bg-white/15"
               >
                 Zamknij
@@ -278,6 +291,13 @@ export default function Leaderboard() {
               <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-5 text-center font-semibold text-gray-300">
                 Ładuję historię...
               </div>
+            ) : historyError ? (
+              <EmptyState
+                compact
+                icon="predictions"
+                title="Historia chwilowo niedostępna"
+                description={historyError}
+              />
             ) : historyModal.predictions.length === 0 ? (
               <EmptyState
                 compact
