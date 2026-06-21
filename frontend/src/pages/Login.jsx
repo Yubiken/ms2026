@@ -41,7 +41,7 @@ export default function Login({ onLogin }) {
       onLogin(data.access_token)
 
       toast.success("Cześć, " + username + "!")
-      navigate("/matches")
+      navigate("/dashboard")
 
     } catch {
       toast.error("Błąd serwera")

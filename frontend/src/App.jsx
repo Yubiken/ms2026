@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import { useState, useEffect, useCallback } from "react"
 
 import Login from "./pages/Login"
+import Dashboard from "./pages/Dashboard"
 import Matches from "./pages/Matches"
 import MyPredictions from "./pages/MyPredictions"
 import Leaderboard from "./pages/Leaderboard"
@@ -106,17 +107,22 @@ export default function App() {
           path="/login"
           element={
             token
-              ? <Navigate to="/matches" />
+              ? <Navigate to="/dashboard" />
               : <Login onLogin={(newToken) => setToken(newToken)} />
           }
         />
 
         <Route
           path="/register"
-          element={<Navigate to={token ? "/matches" : "/login"} />}
+          element={<Navigate to={token ? "/dashboard" : "/login"} />}
         />
 
         {/* PROTECTED */}
+        <Route
+          path="/dashboard"
+          element={token ? <Dashboard /> : <Navigate to="/login" />}
+        />
+
         <Route
           path="/matches"
           element={token ? <Matches onPredictionsChange={handlePredictionsChange} /> : <Navigate to="/login" />}
@@ -139,13 +145,13 @@ export default function App() {
 
         <Route
           path="/admin"
-          element={token && isAdminToken(token) ? <Admin /> : <Navigate to={token ? "/matches" : "/login"} />}
+          element={token && isAdminToken(token) ? <Admin /> : <Navigate to={token ? "/dashboard" : "/login"} />}
         />
 
         {/* DEFAULT */}
         <Route
           path="*"
-          element={<Navigate to={token ? "/matches" : "/login"} />}
+          element={<Navigate to={token ? "/dashboard" : "/login"} />}
         />
 
         </Routes>

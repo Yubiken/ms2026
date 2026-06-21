@@ -28,6 +28,17 @@ function NavIcon({ type }) {
     )
   }
 
+  if (type === "dashboard") {
+    return (
+      <svg {...sharedProps}>
+        <path d="M4 13h6V4H4v9Z" />
+        <path d="M14 20h6v-9h-6v9Z" />
+        <path d="M14 7h6V4h-6v3Z" />
+        <path d="M4 20h6v-3H4v3Z" />
+      </svg>
+    )
+  }
+
   if (type === "ranking") {
     return (
       <svg {...sharedProps}>
@@ -87,6 +98,7 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
   }
 
   const mobileNavItems = [
+    { to: "/dashboard", label: "Start", icon: "dashboard" },
     {
       to: "/matches",
       label: "Mecze",
@@ -116,7 +128,7 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
           <div className="flex items-center justify-between gap-4">
 
             <Link
-              to="/matches"
+              to="/dashboard"
               className="min-w-0 text-lg font-black tracking-wide sm:text-2xl"
             >
               <span className="block truncate bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
@@ -127,27 +139,22 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
             {token && (
               <div className="hidden items-center gap-8 text-sm font-semibold uppercase tracking-widest md:flex">
 
-                <Link to="/matches" className="transition hover:text-red-500">
-                  Mecze
-                </Link>
-
-                <Link to="/my-predictions" className="transition hover:text-red-500">
-                  Moje Typy
-                </Link>
-
-                <Link to="/champion" className="transition hover:text-red-500">
-                  Mistrz
-                </Link>
-
-                <Link to="/leaderboard" className="transition hover:text-red-500">
-                  Ranking
-                </Link>
-
-                {isAdmin && (
-                  <Link to="/admin" className="transition hover:text-red-500">
-                    Admin
-                  </Link>
-                )}
+                {mobileNavItems.map(item => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) => `relative py-2 transition hover:text-white ${
+                      isActive ? "text-green-300" : "text-gray-300"
+                    }`}
+                  >
+                    {item.label === "Start" ? "Pulpit" : item.label}
+                    {item.badge && (
+                      <span className="absolute -right-4 -top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-green-400 px-1 text-[10px] font-black text-black">
+                        {item.badge}
+                      </span>
+                    )}
+                  </NavLink>
+                ))}
 
                 <span className="font-semibold text-yellow-400">
                   {username}
@@ -197,7 +204,7 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
 
       {token && (
         <nav className="fixed inset-x-3 bottom-3 z-40 rounded-3xl border border-white/10 bg-[#070b12]/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-white shadow-2xl shadow-black/50 backdrop-blur-xl md:hidden">
-          <div className={`grid gap-1 ${isAdmin ? "grid-cols-5" : "grid-cols-4"}`}>
+          <div className={`grid gap-1 ${isAdmin ? "grid-cols-6" : "grid-cols-5"}`}>
             {mobileNavItems.map(item => (
               <NavLink
                 key={item.to}
