@@ -283,9 +283,11 @@ def leaderboard(db: Session = Depends(get_db)):
         db.query(
             User.id,
             User.username,
-            func.coalesce(func.sum(Prediction.points), 0).label("total_points")
+            func.coalesce(func.sum(Prediction.points), 0).label("total_points"),
+            func.count(Match.id).filter(Match.is_finished.is_(True)).label("settled_predictions_count"),
         )
         .outerjoin(Prediction, Prediction.user_id == User.id)
+        .outerjoin(Match, Match.id == Prediction.match_id)
         .group_by(User.id)
         .order_by(func.sum(Prediction.points).desc())
         .all()
@@ -296,7 +298,11 @@ def leaderboard(db: Session = Depends(get_db)):
             "position": index + 1,
             "user_id": r.id,
             "username": r.username,
-            "points": int(r.total_points)
+            "points": int(r.total_points),
+            "settled_predictions_count": int(r.settled_predictions_count),
+            "accuracy": round((int(r.total_points) / (int(r.settled_predictions_count) * 2)) * 100)
+            if int(r.settled_predictions_count) > 0
+            else None,
         }
         for index, r in enumerate(results)
     ]

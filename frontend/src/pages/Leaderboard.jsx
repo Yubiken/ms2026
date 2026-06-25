@@ -18,6 +18,16 @@ const getBeerCountLabel = (count) => {
   return `${value} piwek`
 }
 
+const getAccuracyLabel = (user) => {
+  const settledCount = Number(user.settled_predictions_count ?? 0)
+
+  if (settledCount <= 0 || user.accuracy == null) {
+    return "Skuteczność -"
+  }
+
+  return `Skuteczność ${user.accuracy}% · ${settledCount} ${settledCount === 1 ? "rozliczony typ" : "rozliczonych typów"}`
+}
+
 export default function Leaderboard() {
 
   const [rankings, setRankings] = useState({
@@ -255,6 +265,12 @@ export default function Leaderboard() {
                           {!isCurrentUser && diff > 0 && (
                             <div className="mt-1 text-xs text-gray-400">
                               {formatValue(diff)} do lidera
+                            </div>
+                          )}
+
+                          {!isBeerMode && (
+                            <div className="mt-1 text-xs font-semibold text-green-300">
+                              {getAccuracyLabel(user)}
                             </div>
                           )}
 
