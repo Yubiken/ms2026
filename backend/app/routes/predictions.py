@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from pydantic import BaseModel, Field
@@ -117,7 +118,15 @@ def create_prediction(
     )
 
     db.add(new_prediction)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        raise HTTPException(
+            status_code=400,
+            detail="Prediction already exists"
+        ) from exc
+
     db.refresh(new_prediction)
 
     logger.info(f"Prediction created user={current_user.id} match={match.id}")

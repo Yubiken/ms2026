@@ -65,6 +65,21 @@ def ensure_prediction_beers_column():
         )
 
 
+def ensure_prediction_unique_user_match_index():
+    inspector = inspect(engine)
+
+    if not inspector.has_table("predictions"):
+        return
+
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS uq_predictions_user_match "
+                "ON predictions (user_id, match_id)"
+            )
+        )
+
+
 # Dependency do FastAPI
 def get_db():
     db = SessionLocal()
