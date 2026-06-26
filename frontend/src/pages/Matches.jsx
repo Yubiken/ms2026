@@ -17,6 +17,36 @@ const statusFilters = [
 const groupFilters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]
 const popularScores = ["1:0", "1:1", "2:1", "2:0"]
 
+const stageLabels = {
+  group: "Faza grupowa",
+  round_of_32: "1/16 finału",
+  round_of_16: "1/8 finału",
+  quarter_final: "Ćwierćfinał",
+  semi_final: "Półfinał",
+  third_place: "Mecz o 3. miejsce",
+  final: "Finał",
+}
+
+const stageColors = {
+  group: "bg-white/40",
+  round_of_32: "bg-sky-400",
+  round_of_16: "bg-violet-400",
+  quarter_final: "bg-orange-400",
+  semi_final: "bg-red-400",
+  third_place: "bg-amber-300",
+  final: "bg-yellow-400",
+}
+
+const getStageLabel = (stage) => stageLabels[stage] || stage || "Inna faza"
+
+const getMatchPhaseLabel = (match) => {
+  if (match.stage === "group" && match.group_name) {
+    return `Grupa ${match.group_name}`
+  }
+
+  return getStageLabel(match.stage)
+}
+
 const getPredictionCountLabel = (count) => {
   if (count === 1) return "1 typ"
   if (count >= 2 && count <= 4) return `${count} typy`
@@ -121,6 +151,7 @@ export default function Matches({ onPredictionsChange }) {
   const [myPredictions, setMyPredictions] = useState([])
   const [loading, setLoading] = useState(true)
   const [activeStatusFilter, setActiveStatusFilter] = useState("all")
+  const [activeStageFilter, setActiveStageFilter] = useState("all")
   const [activeGroupFilter, setActiveGroupFilter] = useState("all")
 
   const [selectedMatch, setSelectedMatch] = useState(null)
@@ -402,9 +433,10 @@ export default function Matches({ onPredictionsChange }) {
 
   const filteredMatches = matches.filter(match => {
     const statusMatch = activeStatusFilter === "all" || getMatchState(match) === activeStatusFilter
+    const stageMatch = activeStageFilter === "all" || (match.stage || "group") === activeStageFilter
     const groupMatch = activeGroupFilter === "all" || match.group_name === activeGroupFilter
 
-    return statusMatch && groupMatch
+    return statusMatch && stageMatch && groupMatch
   })
 
   const statusCounts = matches.reduce((counts, match) => {
@@ -430,6 +462,12 @@ export default function Matches({ onPredictionsChange }) {
     : 0
   const missingPredictionsCount = statusCounts.todo || 0
   const activeStatusLabel = statusFilters.find(filter => filter.key === activeStatusFilter)?.label || "Wszystkie"
+  const availableStageFilters = [
+    { key: "all", label: "Wszystkie fazy" },
+    ...Array.from(new Set(matches.map(match => match.stage || "group")))
+      .map(stage => ({ key: stage, label: getStageLabel(stage) })),
+  ]
+  const activeStageLabel = availableStageFilters.find(filter => filter.key === activeStageFilter)?.label || "Wszystkie fazy"
   const activeGroupLabel = activeGroupFilter === "all" ? "Wszystkie grupy" : `Grupa ${activeGroupFilter}`
 
   const matchGroups = Object.entries(
@@ -495,6 +533,10 @@ export default function Matches({ onPredictionsChange }) {
 
     if (activeStatusFilter !== "all" && getMatchState(match) !== activeStatusFilter) {
       setActiveStatusFilter("all")
+    }
+
+    if (activeStageFilter !== "all" && (match.stage || "group") !== activeStageFilter) {
+      setActiveStageFilter("all")
     }
 
     if (activeGroupFilter !== "all" && match.group_name !== activeGroupFilter) {
@@ -570,11 +612,9 @@ export default function Matches({ onPredictionsChange }) {
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-300">
-                      {nextMatch.group_name && (
-                        <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-gray-200">
-                          Grupa {nextMatch.group_name}
-                        </span>
-                      )}
+                      <span className="rounded-full bg-white/10 px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-gray-200">
+                        {getMatchPhaseLabel(nextMatch)}
+                      </span>
                       <span>
                         {new Date(nextMatch.start_time).toLocaleString("pl-PL", {
                           day: "2-digit",
@@ -666,7 +706,7 @@ export default function Matches({ onPredictionsChange }) {
                 Filtry
               </div>
               <div className="text-xs font-semibold text-gray-400">
-                {activeStatusLabel} · {activeGroupLabel}
+                {activeStatusLabel} · {activeStageLabel} · {activeGroupLabel}
               </div>
             </div>
           </summary>
@@ -683,6 +723,26 @@ export default function Matches({ onPredictionsChange }) {
                     className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
                       isActive
                         ? "bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-black"
+                        : "bg-white/10 text-gray-300 hover:bg-white/15"
+                    }`}
+                  >
+                    {filter.label}
+                  </button>
+                )
+              })}
+            </div>
+
+            <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+              {availableStageFilters.map(filter => {
+                const isActive = activeStageFilter === filter.key
+
+                return (
+                  <button
+                    key={filter.key}
+                    onClick={() => setActiveStageFilter(filter.key)}
+                    className={`flex-shrink-0 rounded-full px-4 py-2 text-sm font-bold transition ${
+                      isActive
+                        ? "bg-gradient-to-r from-green-400 to-emerald-500 text-black"
                         : "bg-white/10 text-gray-300 hover:bg-white/15"
                     }`}
                   >
@@ -728,6 +788,7 @@ export default function Matches({ onPredictionsChange }) {
             actionLabel="Wyczyść filtry"
             onAction={() => {
               setActiveStatusFilter("all")
+              setActiveStageFilter("all")
               setActiveGroupFilter("all")
             }}
           />
@@ -777,16 +838,14 @@ export default function Matches({ onPredictionsChange }) {
                           key={match.id}
                           className="match-ticket w-full rounded-2xl p-3 pl-5 transition duration-300 hover:-translate-y-0.5 sm:p-6 sm:pl-8"
                         >
-                          <span className={`group-strip ${groupColors[match.group_name] || "bg-white/40"}`} />
+                          <span className={`group-strip ${groupColors[match.group_name] || stageColors[match.stage] || "bg-white/40"}`} />
 
                           <div className="relative z-10 flex items-center justify-between gap-3 sm:gap-4">
                             <div className="min-w-0 w-full">
                               <div className="mb-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide text-gray-400 sm:mb-2 sm:gap-2 sm:text-xs">
-                                {match.group_name && (
-                                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-gray-200 sm:px-2.5 sm:py-1">
-                                    Grupa {match.group_name}
-                                  </span>
-                                )}
+                                <span className="rounded-full bg-white/10 px-2 py-0.5 text-gray-200 sm:px-2.5 sm:py-1">
+                                  {getMatchPhaseLabel(match)}
+                                </span>
                                 <span className={`rounded-full border px-2 py-0.5 sm:px-2.5 sm:py-1 ${status.className}`}>
                                   {status.label}
                                 </span>
@@ -863,11 +922,9 @@ export default function Matches({ onPredictionsChange }) {
             <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 sm:p-7">
               <div className="mb-5">
               <div className="mb-3 flex flex-wrap items-center gap-2 text-xs font-bold uppercase tracking-wide text-gray-400">
-                {selectedMatch.group_name && (
-                  <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-200">
-                    Grupa {selectedMatch.group_name}
-                  </span>
-                )}
+                <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-200">
+                  {getMatchPhaseLabel(selectedMatch)}
+                </span>
                 <span>
                   {new Date(selectedMatch.start_time).toLocaleString("pl-PL", {
                     day: "2-digit",
