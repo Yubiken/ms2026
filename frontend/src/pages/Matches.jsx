@@ -5,6 +5,7 @@ import { apiRequest } from "../api"
 import { getUsername } from "../auth"
 import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
+import TeamName from "../components/TeamName"
 
 const statusFilters = [
   { key: "all", label: "Wszystkie" },
@@ -684,9 +685,9 @@ export default function Matches({ onPredictionsChange }) {
                 {nextMatch ? (
                   <>
                     <div className="mt-2 break-words text-2xl font-black leading-tight">
-                      {nextMatch.home_team}
+                      <TeamName name={nextMatch.home_team} />
                       <span className="mx-2 text-gray-500">vs</span>
-                      {nextMatch.away_team}
+                      <TeamName name={nextMatch.away_team} />
                     </div>
 
                     <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-gray-300">
@@ -965,9 +966,9 @@ export default function Matches({ onPredictionsChange }) {
                               </div>
 
                               <div className="text-base font-black leading-snug tracking-wide break-words sm:text-xl">
-                                {match.home_team}
+                                <TeamName name={match.home_team} />
                                 <span className="mx-1.5 text-gray-500 sm:mx-2">vs</span>
-                                {match.away_team}
+                                <TeamName name={match.away_team} />
                               </div>
 
                               {(!isStarted || myPrediction) && (
@@ -1041,9 +1042,9 @@ export default function Matches({ onPredictionsChange }) {
               </div>
 
               <h2 className="text-2xl font-black leading-tight text-white">
-                {selectedMatch.home_team}
+                <TeamName name={selectedMatch.home_team} />
                 <span className="mx-2 text-gray-500">vs</span>
-                {selectedMatch.away_team}
+                <TeamName name={selectedMatch.away_team} />
               </h2>
             </div>
 
@@ -1122,7 +1123,7 @@ export default function Matches({ onPredictionsChange }) {
               </h2>
               <div className="mt-4 grid grid-cols-[1fr_auto_1fr] items-center gap-3 text-sm sm:text-base">
                 <div className="min-w-0 truncate text-right font-bold">
-                  {predictionsModal.home_team}
+                  <TeamName name={predictionsModal.home_team} />
                 </div>
                 <div className="rounded-full bg-white/10 px-3 py-1 font-black text-yellow-300">
                   {hasFinalScore
@@ -1130,7 +1131,7 @@ export default function Matches({ onPredictionsChange }) {
                     : "vs"}
                 </div>
                 <div className="min-w-0 truncate text-left font-bold">
-                  {predictionsModal.away_team}
+                  <TeamName name={predictionsModal.away_team} />
                 </div>
               </div>
               <div className="mt-2 text-xs font-semibold uppercase tracking-wide text-gray-500">

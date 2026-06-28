@@ -3,6 +3,7 @@ import { getUsername } from "../auth"
 import { apiRequest } from "../api"
 import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
+import TeamName from "../components/TeamName"
 
 const rankingModes = [
   { key: "points", label: "Punkty", endpoint: "/leaderboard", valueKey: "points" },
@@ -452,9 +453,9 @@ export default function Leaderboard() {
                         </div>
 
                         <div className="font-black text-white">
-                          {prediction.home_team}
+                          <TeamName name={prediction.home_team} />
                           <span className="mx-2 text-gray-500">vs</span>
-                          {prediction.away_team}
+                          <TeamName name={prediction.away_team} />
                         </div>
 
                         <div className="mt-3 flex flex-wrap gap-2 text-sm font-semibold">

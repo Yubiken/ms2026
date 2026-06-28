@@ -4,6 +4,7 @@ import toast from "react-hot-toast"
 import { apiRequest } from "../api"
 import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
+import TeamName from "../components/TeamName"
 
 const clampBeerCount = (value) => {
   const parsed = Number(value)
@@ -234,9 +235,9 @@ export default function MyPredictions() {
                         </div>
 
                         <div className="break-words text-base font-black sm:text-lg">
-                          {prediction.home_team}
+                          <TeamName name={prediction.home_team} />
                           <span className="mx-2 text-gray-500">vs</span>
-                          {prediction.away_team}
+                          <TeamName name={prediction.away_team} />
                         </div>
 
                         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold">

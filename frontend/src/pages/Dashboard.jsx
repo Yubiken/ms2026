@@ -3,6 +3,7 @@ import { Link } from "react-router-dom"
 import { apiRequest } from "../api"
 import { getUsername } from "../auth"
 import PageLoader from "../components/PageLoader"
+import TeamName from "../components/TeamName"
 
 const formatDate = (date) => new Date(date).toLocaleString("pl-PL", {
   weekday: "short",
@@ -131,9 +132,9 @@ export default function Dashboard() {
               {primaryMatch ? (
                 <>
                   <h2 className="mt-4 text-2xl font-black leading-tight sm:text-4xl">
-                    {primaryMatch.home_team}
+                    <TeamName name={primaryMatch.home_team} />
                     <span className="mx-2 text-white/35">vs</span>
-                    {primaryMatch.away_team}
+                    <TeamName name={primaryMatch.away_team} />
                   </h2>
                   <div className="mt-3 flex flex-wrap gap-2 text-sm font-semibold text-gray-300">
                     {primaryMatch.group_name && <span>Grupa {primaryMatch.group_name}</span>}
