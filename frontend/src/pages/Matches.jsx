@@ -145,6 +145,50 @@ function ScoreControl({ label, value, onChange }) {
   )
 }
 
+function StageSummaryPanel({
+  title,
+  matchesCount,
+  predictionsCount,
+  todoCount,
+  actionLabel,
+  onAction,
+}) {
+  return (
+    <div className="mb-6 rounded-2xl border border-white/10 bg-white/[0.05] p-4 shadow-lg sm:p-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <div className="text-xs font-black uppercase tracking-wide text-gray-400">
+            {title}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-wide">
+            <span className="rounded-full border border-white/10 bg-black/25 px-3 py-1 text-gray-200">
+              {matchesCount} {matchesCount === 1 ? "mecz" : "mecze"}
+            </span>
+            <span className="rounded-full border border-yellow-400/20 bg-yellow-500/15 px-3 py-1 text-yellow-300">
+              {predictionsCount} obstawionych
+            </span>
+            {todoCount > 0 && (
+              <span className="rounded-full border border-green-400/20 bg-green-500/15 px-3 py-1 text-green-300">
+                {todoCount} do typowania
+              </span>
+            )}
+          </div>
+        </div>
+
+        {actionLabel && (
+          <button
+            type="button"
+            onClick={onAction}
+            className="rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-bold uppercase text-gray-100 transition hover:bg-white/15"
+          >
+            {actionLabel}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Matches({ onPredictionsChange }) {
 
   const [matches, setMatches] = useState([])
@@ -153,6 +197,8 @@ export default function Matches({ onPredictionsChange }) {
   const [activeStatusFilter, setActiveStatusFilter] = useState("all")
   const [activeStageFilter, setActiveStageFilter] = useState("all")
   const [activeGroupFilter, setActiveGroupFilter] = useState("all")
+  const [showGroupStageMatches, setShowGroupStageMatches] = useState(false)
+  const [showRoundOf32Matches, setShowRoundOf32Matches] = useState(false)
 
   const [selectedMatch, setSelectedMatch] = useState(null)
   const [homeScore, setHomeScore] = useState("")
@@ -470,8 +516,30 @@ export default function Matches({ onPredictionsChange }) {
   const activeStageLabel = availableStageFilters.find(filter => filter.key === activeStageFilter)?.label || "Wszystkie fazy"
   const activeGroupLabel = activeGroupFilter === "all" ? "Wszystkie grupy" : `Grupa ${activeGroupFilter}`
 
+  const shouldShowStagePanels = activeStageFilter === "all" && activeGroupFilter === "all"
+  const groupStageMatches = filteredMatches.filter(match => (match.stage || "group") === "group")
+  const roundOf32Matches = filteredMatches.filter(match => match.stage === "round_of_32")
+  const visibleMatches = shouldShowStagePanels
+    ? filteredMatches.filter(match => {
+        const stage = match.stage || "group"
+
+        if (stage === "group") return showGroupStageMatches
+        if (stage === "round_of_32") return showRoundOf32Matches
+
+        return true
+      })
+    : filteredMatches
+  const collapsedGroupTodoCount = groupStageMatches.filter(match => getMatchState(match) === "todo").length
+  const collapsedGroupPredictionsCount = groupStageMatches.filter(match =>
+    myPredictions.some(prediction => prediction.match_id === match.id)
+  ).length
+  const roundOf32TodoCount = roundOf32Matches.filter(match => getMatchState(match) === "todo").length
+  const roundOf32PredictionsCount = roundOf32Matches.filter(match =>
+    myPredictions.some(prediction => prediction.match_id === match.id)
+  ).length
+
   const matchGroups = Object.entries(
-    filteredMatches
+    visibleMatches
       .slice()
       .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
       .reduce((groups, match) => {
@@ -781,12 +849,39 @@ export default function Matches({ onPredictionsChange }) {
           </div>
         </details>
 
-        {matchGroups.length === 0 ? (
+        {shouldShowStagePanels && groupStageMatches.length > 0 && (
+          <StageSummaryPanel
+            title="Faza grupowa"
+            matchesCount={groupStageMatches.length}
+            predictionsCount={collapsedGroupPredictionsCount}
+            todoCount={collapsedGroupTodoCount}
+            actionLabel={showGroupStageMatches ? "Zwiń" : "Pokaż"}
+            onAction={() => setShowGroupStageMatches(isVisible => !isVisible)}
+          />
+        )}
+
+        {shouldShowStagePanels && roundOf32Matches.length > 0 && (
+          <StageSummaryPanel
+            title="1/16 finału"
+            matchesCount={roundOf32Matches.length}
+            predictionsCount={roundOf32PredictionsCount}
+            todoCount={roundOf32TodoCount}
+            actionLabel={showRoundOf32Matches ? "Zwiń" : "Pokaż"}
+            onAction={() => setShowRoundOf32Matches(isVisible => !isVisible)}
+          />
+        )}
+
+        {filteredMatches.length === 0 ? (
           <EmptyState
             title="Nie ma meczów w tym widoku"
             description="Zmień status albo grupę, żeby zobaczyć inne spotkania."
             actionLabel="Wyczyść filtry"
             onAction={() => {
+              if (shouldShowStagePanels && groupStageMatches.length > 0) {
+                setShowGroupStageMatches(true)
+                return
+              }
+
               setActiveStatusFilter("all")
               setActiveStageFilter("all")
               setActiveGroupFilter("all")
