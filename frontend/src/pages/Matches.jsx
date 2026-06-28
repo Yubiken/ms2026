@@ -611,6 +611,16 @@ export default function Matches({ onPredictionsChange }) {
       setActiveGroupFilter("all")
     }
 
+    const stage = match.stage || "group"
+
+    if (stage === "group") {
+      setShowGroupStageMatches(true)
+    }
+
+    if (stage === "round_of_32") {
+      setShowRoundOf32Matches(true)
+    }
+
     setPendingScrollMatchId(matchId)
   }
 
