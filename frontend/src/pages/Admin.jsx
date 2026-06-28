@@ -3,6 +3,7 @@ import toast from "react-hot-toast"
 import { apiRequest } from "../api"
 import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
+import TeamName from "../components/TeamName"
 
 export default function Admin() {
 
@@ -231,9 +232,9 @@ export default function Admin() {
                       </div>
 
                       <div className="text-lg font-black sm:text-xl">
-                        {match.home_team}
+                        <TeamName name={match.home_team} />
                         <span className="mx-2 text-gray-500">vs</span>
-                        {match.away_team}
+                        <TeamName name={match.away_team} />
                       </div>
 
                       {match.is_finished && (

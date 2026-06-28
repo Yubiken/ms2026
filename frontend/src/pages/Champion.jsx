@@ -4,6 +4,7 @@ import { apiRequest } from "../api"
 import { getUsername } from "../auth"
 import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
+import TeamName from "../components/TeamName"
 
 const getVoteLabel = (count) => {
   const value = Number(count ?? 0)
@@ -128,7 +129,7 @@ export default function Champion() {
                 Twój mistrz
               </div>
               <div className="mt-4 break-words text-4xl font-black text-white">
-                {pick.team_name}
+                <TeamName name={pick.team_name} />
               </div>
               <div className="mt-4 rounded-full border border-green-400/25 bg-green-500/15 px-4 py-2 text-sm font-bold text-green-300">
                 Wybór zapisany
@@ -166,7 +167,7 @@ export default function Champion() {
                       </div>
                       <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div className="break-words text-3xl font-black text-white">
-                          {summary[0].team_name}
+                          <TeamName name={summary[0].team_name} />
                         </div>
                         <div className="text-sm font-bold text-gray-300">
                           {getVoteLabel(summary[0].votes)}
@@ -196,7 +197,9 @@ export default function Champion() {
                       >
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="truncate font-bold">{item.team_name}</div>
+                            <div className="truncate font-bold">
+                              <TeamName name={item.team_name} />
+                            </div>
                             {isLeader && (
                               <div className="mt-1 text-xs font-bold uppercase tracking-wide text-yellow-300">
                                 Lider głosowania
@@ -286,7 +289,9 @@ export default function Champion() {
                         {team.slice(0, 1)}
                       </div>
                       <div className="min-w-0">
-                        <div className="truncate text-lg font-black">{team}</div>
+                        <div className="truncate text-lg font-black">
+                          <TeamName name={team} />
+                        </div>
                         <div className="mt-1 text-xs font-bold uppercase tracking-wide text-gray-500">
                           {savingTeam === team ? "Zapisywanie..." : "Wybierz mistrza"}
                         </div>
