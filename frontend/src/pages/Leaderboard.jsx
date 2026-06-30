@@ -29,6 +29,15 @@ const getAccuracyLabel = (user) => {
   return `Skuteczność ${user.accuracy}% · ${settledCount} ${settledCount === 1 ? "rozliczony typ" : "rozliczonych typów"}`
 }
 
+const getExactScoreLabel = (count) => {
+  const value = Number(count ?? 0)
+
+  if (value === 1) return "1 dokładny wynik"
+  if (value >= 2 && value <= 4) return `${value} dokładne wyniki`
+
+  return `${value} dokładnych wyników`
+}
+
 export default function Leaderboard() {
 
   const [rankings, setRankings] = useState({
@@ -270,8 +279,13 @@ export default function Leaderboard() {
                           )}
 
                           {!isBeerMode && (
-                            <div className="mt-1 text-xs font-semibold text-green-300">
-                              {getAccuracyLabel(user)}
+                            <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
+                              <span className="rounded-full border border-green-400/20 bg-green-500/15 px-2.5 py-1 text-green-300">
+                                {getAccuracyLabel(user)}
+                              </span>
+                              <span className="rounded-full border border-yellow-400/20 bg-yellow-500/15 px-2.5 py-1 text-yellow-300">
+                                {getExactScoreLabel(user.exact_score_count)}
+                              </span>
                             </div>
                           )}
 

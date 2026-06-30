@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import case, func
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
 
@@ -287,6 +287,20 @@ def finish_match(
 
 @router.get("/leaderboard")
 def leaderboard(db: Session = Depends(get_db)):
+    exact_score_count = func.coalesce(
+        func.sum(
+            case(
+                (
+                    (Match.is_finished.is_(True))
+                    & (Prediction.home_score == Match.home_score)
+                    & (Prediction.away_score == Match.away_score),
+                    1,
+                ),
+                else_=0,
+            )
+        ),
+        0,
+    )
 
     results = (
         db.query(
@@ -294,6 +308,7 @@ def leaderboard(db: Session = Depends(get_db)):
             User.username,
             func.coalesce(func.sum(Prediction.points), 0).label("total_points"),
             func.count(Match.id).filter(Match.is_finished.is_(True)).label("settled_predictions_count"),
+            exact_score_count.label("exact_score_count"),
         )
         .outerjoin(Prediction, Prediction.user_id == User.id)
         .outerjoin(Match, Match.id == Prediction.match_id)
@@ -309,6 +324,7 @@ def leaderboard(db: Session = Depends(get_db)):
             "username": r.username,
             "points": int(r.total_points),
             "settled_predictions_count": int(r.settled_predictions_count),
+            "exact_score_count": int(r.exact_score_count),
             "accuracy": round((int(r.total_points) / (int(r.settled_predictions_count) * 2)) * 100)
             if int(r.settled_predictions_count) > 0
             else None,
