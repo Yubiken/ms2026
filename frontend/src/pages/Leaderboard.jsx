@@ -61,7 +61,19 @@ export default function Leaderboard() {
           if (!Array.isArray(data)) return []
 
           return [...data]
-            .sort((a, b) => Number(b[valueKey] ?? 0) - Number(a[valueKey] ?? 0))
+            .sort((a, b) => {
+              const valueDiff = Number(b[valueKey] ?? 0) - Number(a[valueKey] ?? 0)
+
+              if (valueDiff !== 0) return valueDiff
+
+              if (valueKey === "points") {
+                const exactScoreDiff = Number(b.exact_score_count ?? 0) - Number(a.exact_score_count ?? 0)
+
+                if (exactScoreDiff !== 0) return exactScoreDiff
+              }
+
+              return String(a.username).localeCompare(String(b.username), "pl")
+            })
             .map((user, index) => ({
               ...user,
               position: index + 1,

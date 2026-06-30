@@ -313,7 +313,11 @@ def leaderboard(db: Session = Depends(get_db)):
         .outerjoin(Prediction, Prediction.user_id == User.id)
         .outerjoin(Match, Match.id == Prediction.match_id)
         .group_by(User.id)
-        .order_by(func.sum(Prediction.points).desc())
+        .order_by(
+            func.sum(Prediction.points).desc(),
+            exact_score_count.desc(),
+            User.username.asc(),
+        )
         .all()
     )
 
