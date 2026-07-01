@@ -5,6 +5,27 @@ import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
 import TeamName from "../components/TeamName"
 
+const stageOptions = [
+  { value: "group", label: "Faza grupowa" },
+  { value: "round_of_32", label: "1/16 finału" },
+  { value: "round_of_16", label: "1/8 finału" },
+  { value: "quarter_final", label: "Ćwierćfinał" },
+  { value: "semi_final", label: "Półfinał" },
+  { value: "third_place", label: "Mecz o 3. miejsce" },
+  { value: "final", label: "Finał" },
+]
+
+const groupOptions = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]
+
+const initialMatchForm = {
+  home_team: "",
+  away_team: "",
+  date: "",
+  time: "",
+  stage: "round_of_16",
+  group_name: "",
+}
+
 export default function Admin() {
 
   const [matches, setMatches] = useState([])
@@ -13,6 +34,8 @@ export default function Admin() {
   const [filter, setFilter] = useState("unfinished")
   const [savingMatchId, setSavingMatchId] = useState(null)
   const [clearingMatchId, setClearingMatchId] = useState(null)
+  const [matchForm, setMatchForm] = useState(initialMatchForm)
+  const [creatingMatch, setCreatingMatch] = useState(false)
 
   useEffect(() => {
     fetchMatches()
@@ -47,6 +70,14 @@ export default function Admin() {
 
     if (score[side] != null) return score[side]
     return match[side] ?? ""
+  }
+
+  const updateMatchForm = (field, value) => {
+    setMatchForm(current => ({
+      ...current,
+      [field]: value,
+      ...(field === "stage" && value !== "group" ? { group_name: "" } : {}),
+    }))
   }
 
   const hasCompleteScore = (match) => {
@@ -128,6 +159,43 @@ export default function Admin() {
     }
   }
 
+  const createMatch = async (event) => {
+    event.preventDefault()
+
+    const homeTeam = matchForm.home_team.trim()
+    const awayTeam = matchForm.away_team.trim()
+
+    if (!homeTeam || !awayTeam || !matchForm.date || !matchForm.time) {
+      toast.error("Uzupełnij drużyny, datę i godzinę")
+      return
+    }
+
+    setCreatingMatch(true)
+
+    try {
+      const data = await apiRequest("/matches", {
+        method: "POST",
+        body: JSON.stringify({
+          home_team: homeTeam,
+          away_team: awayTeam,
+          start_time: `${matchForm.date}T${matchForm.time}:00`,
+          stage: matchForm.stage,
+          group_name: matchForm.stage === "group" && matchForm.group_name ? matchForm.group_name : null,
+        }),
+      })
+
+      if (!data) return
+
+      toast.success("Mecz dodany")
+      setMatchForm(initialMatchForm)
+      await fetchMatches()
+    } catch {
+      toast.error("Nie udało się dodać meczu")
+    } finally {
+      setCreatingMatch(false)
+    }
+  }
+
   const visibleMatches = matches
     .filter(match => {
       if (filter === "finished") return match.is_finished
@@ -187,6 +255,128 @@ export default function Admin() {
             <div className="mt-1 text-2xl font-black text-yellow-300">{finishedCount}</div>
           </div>
         </div>
+
+        <details className="stadium-panel mb-6 rounded-2xl p-4 sm:p-5">
+          <summary className="cursor-pointer list-none">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-black uppercase tracking-wide text-white">
+                  Dodaj mecz
+                </div>
+                <div className="mt-1 text-xs font-semibold text-gray-400">
+                  Data i godzina są traktowane jako czas polski.
+                </div>
+              </div>
+              <div className="text-xs font-bold uppercase tracking-wide text-green-300">
+                Formularz
+              </div>
+            </div>
+          </summary>
+
+          <form onSubmit={createMatch} className="mt-5 border-t border-white/10 pt-5">
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Gospodarz
+                <input
+                  type="text"
+                  value={matchForm.home_team}
+                  onChange={(event) => updateMatchForm("home_team", event.target.value)}
+                  placeholder="np. Kanada"
+                  disabled={creatingMatch}
+                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Gość
+                <input
+                  type="text"
+                  value={matchForm.away_team}
+                  onChange={(event) => updateMatchForm("away_team", event.target.value)}
+                  placeholder="np. Maroko"
+                  disabled={creatingMatch}
+                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Data
+                <input
+                  type="date"
+                  value={matchForm.date}
+                  onChange={(event) => updateMatchForm("date", event.target.value)}
+                  disabled={creatingMatch}
+                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Godzina
+                <input
+                  type="time"
+                  value={matchForm.time}
+                  onChange={(event) => updateMatchForm("time", event.target.value)}
+                  disabled={creatingMatch}
+                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Faza
+                <select
+                  value={matchForm.stage}
+                  onChange={(event) => updateMatchForm("stage", event.target.value)}
+                  disabled={creatingMatch}
+                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {stageOptions.map(option => (
+                    <option key={option.value} value={option.value} className="bg-[#111827] text-white">
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Grupa
+                <select
+                  value={matchForm.group_name}
+                  onChange={(event) => updateMatchForm("group_name", event.target.value)}
+                  disabled={creatingMatch || matchForm.stage !== "group"}
+                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  <option value="" className="bg-[#111827] text-white">
+                    Brak
+                  </option>
+                  {groupOptions.map(group => (
+                    <option key={group} value={group} className="bg-[#111827] text-white">
+                      Grupa {group}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={() => setMatchForm(initialMatchForm)}
+                disabled={creatingMatch}
+                className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-bold uppercase text-gray-200 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Wyczyść
+              </button>
+
+              <button
+                type="submit"
+                disabled={creatingMatch}
+                className="rounded-full bg-gradient-to-r from-green-600 to-emerald-500 px-5 py-2.5 text-sm font-bold uppercase text-white shadow-lg transition hover:from-green-700 hover:to-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {creatingMatch ? "Dodawanie..." : "Dodaj mecz"}
+              </button>
+            </div>
+          </form>
+        </details>
 
         {visibleMatches.length === 0 ? (
           <EmptyState
