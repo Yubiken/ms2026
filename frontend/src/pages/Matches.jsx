@@ -200,6 +200,7 @@ export default function Matches({ onPredictionsChange }) {
   const [activeGroupFilter, setActiveGroupFilter] = useState("all")
   const [showGroupStageMatches, setShowGroupStageMatches] = useState(false)
   const [showRoundOf32Matches, setShowRoundOf32Matches] = useState(false)
+  const [showRoundOf16Matches, setShowRoundOf16Matches] = useState(false)
 
   const [selectedMatch, setSelectedMatch] = useState(null)
   const [homeScore, setHomeScore] = useState("")
@@ -520,12 +521,14 @@ export default function Matches({ onPredictionsChange }) {
   const shouldShowStagePanels = activeStageFilter === "all" && activeGroupFilter === "all"
   const groupStageMatches = filteredMatches.filter(match => (match.stage || "group") === "group")
   const roundOf32Matches = filteredMatches.filter(match => match.stage === "round_of_32")
+  const roundOf16Matches = filteredMatches.filter(match => match.stage === "round_of_16")
   const visibleMatches = shouldShowStagePanels
     ? filteredMatches.filter(match => {
         const stage = match.stage || "group"
 
         if (stage === "group") return showGroupStageMatches
         if (stage === "round_of_32") return showRoundOf32Matches
+        if (stage === "round_of_16") return showRoundOf16Matches
 
         return true
       })
@@ -536,6 +539,10 @@ export default function Matches({ onPredictionsChange }) {
   ).length
   const roundOf32TodoCount = roundOf32Matches.filter(match => getMatchState(match) === "todo").length
   const roundOf32PredictionsCount = roundOf32Matches.filter(match =>
+    myPredictions.some(prediction => prediction.match_id === match.id)
+  ).length
+  const roundOf16TodoCount = roundOf16Matches.filter(match => getMatchState(match) === "todo").length
+  const roundOf16PredictionsCount = roundOf16Matches.filter(match =>
     myPredictions.some(prediction => prediction.match_id === match.id)
   ).length
 
@@ -620,6 +627,10 @@ export default function Matches({ onPredictionsChange }) {
 
     if (stage === "round_of_32") {
       setShowRoundOf32Matches(true)
+    }
+
+    if (stage === "round_of_16") {
+      setShowRoundOf16Matches(true)
     }
 
     setPendingScrollMatchId(matchId)
@@ -879,6 +890,17 @@ export default function Matches({ onPredictionsChange }) {
             todoCount={roundOf32TodoCount}
             actionLabel={showRoundOf32Matches ? "Zwiń" : "Pokaż"}
             onAction={() => setShowRoundOf32Matches(isVisible => !isVisible)}
+          />
+        )}
+
+        {shouldShowStagePanels && roundOf16Matches.length > 0 && (
+          <StageSummaryPanel
+            title="1/8 finału"
+            matchesCount={roundOf16Matches.length}
+            predictionsCount={roundOf16PredictionsCount}
+            todoCount={roundOf16TodoCount}
+            actionLabel={showRoundOf16Matches ? "Zwiń" : "Pokaż"}
+            onAction={() => setShowRoundOf16Matches(isVisible => !isVisible)}
           />
         )}
 
