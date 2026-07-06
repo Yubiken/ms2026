@@ -1,7 +1,9 @@
 import { Link, NavLink, useNavigate } from "react-router-dom"
 import { jwtDecode } from "jwt-decode"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { isAdminToken } from "../admin"
+import { apiRequest } from "../api"
+import UserAvatar from "./UserAvatar"
 
 function NavIcon({ type }) {
   const sharedProps = {
@@ -85,6 +87,7 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
 
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState("")
   const isAdmin = isAdminToken(token)
 
   let username = null
@@ -116,6 +119,16 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
     onLogout()
     navigate("/login")
   }
+
+  useEffect(() => {
+    if (!token) {
+      return
+    }
+
+    apiRequest("/me").then((data) => {
+      setAvatarUrl(data?.avatar_url || "")
+    })
+  }, [token])
 
   return (
     <>
@@ -154,9 +167,13 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
                   </NavLink>
                 ))}
 
-                <span className="font-semibold text-yellow-400">
-                  {username}
-                </span>
+                <Link
+                  to="/profile"
+                  className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] py-1 pl-1 pr-3 font-semibold text-yellow-400 transition hover:bg-white/10"
+                >
+                  <UserAvatar username={username} avatarUrl={avatarUrl} className="h-8 w-8 text-xs" />
+                  <span className="max-w-36 truncate">{username}</span>
+                </Link>
 
                 <button
                   onClick={handleLogout}
@@ -183,9 +200,14 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
           {mobileOpen && token && (
             <div className="mt-4 flex flex-col gap-4 border-t border-white/10 pt-4 text-sm font-semibold uppercase tracking-widest md:hidden">
 
-              <div className="text-yellow-400">
-                {username}
-              </div>
+              <Link
+                to="/profile"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-yellow-400"
+              >
+                <UserAvatar username={username} avatarUrl={avatarUrl} className="h-11 w-11" />
+                <span className="min-w-0 truncate">{username}</span>
+              </Link>
 
               <button
                 onClick={handleLogout}

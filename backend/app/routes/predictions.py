@@ -306,6 +306,7 @@ def leaderboard(db: Session = Depends(get_db)):
         db.query(
             User.id,
             User.username,
+            User.avatar_url,
             func.coalesce(func.sum(Prediction.points), 0).label("total_points"),
             func.count(Match.id).filter(Match.is_finished.is_(True)).label("settled_predictions_count"),
             exact_score_count.label("exact_score_count"),
@@ -326,6 +327,7 @@ def leaderboard(db: Session = Depends(get_db)):
             "position": index + 1,
             "user_id": r.id,
             "username": r.username,
+            "avatar_url": r.avatar_url,
             "points": int(r.total_points),
             "settled_predictions_count": int(r.settled_predictions_count),
             "exact_score_count": int(r.exact_score_count),
@@ -394,6 +396,7 @@ def beer_leaderboard(db: Session = Depends(get_db)):
         db.query(
             User.id,
             User.username,
+            User.avatar_url,
             total_beers.label("total_beers")
         )
         .outerjoin(Prediction, Prediction.user_id == User.id)
@@ -407,6 +410,7 @@ def beer_leaderboard(db: Session = Depends(get_db)):
             "position": index + 1,
             "user_id": r.id,
             "username": r.username,
+            "avatar_url": r.avatar_url,
             "beers": int(r.total_beers)
         }
         for index, r in enumerate(results)

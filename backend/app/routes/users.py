@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime, timedelta, timezone
 import os
 
@@ -42,12 +43,25 @@ class UserLogin(BaseModel):
     password: str
 
 
+class PasswordReset(BaseModel):
+    username: str
+    email: EmailStr
+    new_password: str = Field(..., min_length=6)
+
+
 class UserResponse(BaseModel):
     id: int
     username: str
+    email: EmailStr
+    avatar_url: str | None = None
 
     class Config:
         from_attributes = True
+
+
+class UserProfileUpdate(BaseModel):
+    username: str = Field(..., min_length=2, max_length=40)
+    avatar_url: str | None = Field(default=None, max_length=500)
 
 
 # ===============================
@@ -71,6 +85,24 @@ def create_access_token(data: dict):
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+def normalize_avatar_url(avatar_url: str | None) -> str | None:
+    if avatar_url is None:
+        return None
+
+    normalized_url = avatar_url.strip()
+
+    if not normalized_url:
+        return None
+
+    if not normalized_url.startswith(("https://", "http://")):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Avatar musi byÄ‡ adresem URL zaczynajÄ…cym siÄ™ od http:// lub https://"
+        )
+
+    return normalized_url
 
 
 # ===============================
@@ -126,6 +158,36 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
 
 
 # ===============================
+# RESET PASSWORD
+# ===============================
+
+@router.post("/reset-password")
+def reset_password(payload: PasswordReset, db: Session = Depends(get_db)):
+    username = payload.username.strip()
+    email = payload.email.strip().lower()
+
+    db_user = (
+        db.query(User)
+        .filter(
+            User.username == username,
+            func.lower(User.email) == email,
+        )
+        .first()
+    )
+
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nick i email nie pasują do żadnego użytkownika"
+        )
+
+    db_user.password_hash = hash_password(payload.new_password)
+    db.commit()
+
+    return {"message": "Password changed"}
+
+
+# ===============================
 # CURRENT USER
 # ===============================
 
@@ -166,3 +228,46 @@ def get_current_user(
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.put("/me")
+def update_me(
+    payload: UserProfileUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    username = payload.username.strip()
+
+    if not username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Nick jest wymagany"
+        )
+
+    existing_user = (
+        db.query(User)
+        .filter(User.username == username, User.id != current_user.id)
+        .first()
+    )
+
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Ten nick jest juĹĽ zajÄ™ty"
+        )
+
+    current_user.username = username
+    current_user.avatar_url = normalize_avatar_url(payload.avatar_url)
+
+    db.commit()
+    db.refresh(current_user)
+
+    return {
+        "user": {
+            "id": current_user.id,
+            "username": current_user.username,
+            "email": current_user.email,
+            "avatar_url": current_user.avatar_url,
+        },
+        "access_token": create_access_token({"sub": current_user.username}),
+    }

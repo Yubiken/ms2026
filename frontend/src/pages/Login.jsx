@@ -9,6 +9,12 @@ export default function Login({ onLogin }) {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showPasswordReset, setShowPasswordReset] = useState(false)
+  const [resetUsername, setResetUsername] = useState("")
+  const [resetEmail, setResetEmail] = useState("")
+  const [newPassword, setNewPassword] = useState("")
+  const [repeatPassword, setRepeatPassword] = useState("")
+  const [resetLoading, setResetLoading] = useState(false)
 
   const navigate = useNavigate()
 
@@ -50,6 +56,60 @@ export default function Login({ onLogin }) {
     setLoading(false)
   }
 
+  const handlePasswordReset = async (event) => {
+    event.preventDefault()
+
+    if (!resetUsername || !resetEmail || !newPassword || !repeatPassword) {
+      toast.error("Uzupełnij wszystkie pola")
+      return
+    }
+
+    if (newPassword.length < 6) {
+      toast.error("Nowe hasło musi mieć minimum 6 znaków")
+      return
+    }
+
+    if (newPassword !== repeatPassword) {
+      toast.error("Hasła nie są takie same")
+      return
+    }
+
+    setResetLoading(true)
+
+    try {
+      const response = await fetch(`${API}/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          username: resetUsername,
+          email: resetEmail,
+          new_password: newPassword,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        toast.error(data.detail || "Nie udało się zmienić hasła")
+        setResetLoading(false)
+        return
+      }
+
+      toast.success("Hasło zostało zmienione")
+      setUsername(resetUsername)
+      setPassword("")
+      setResetUsername("")
+      setResetEmail("")
+      setNewPassword("")
+      setRepeatPassword("")
+      setShowPasswordReset(false)
+    } catch {
+      toast.error("Błąd serwera")
+    }
+
+    setResetLoading(false)
+  }
+
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#0b0f1a] px-4 animate-fadeIn">
 
@@ -59,7 +119,7 @@ export default function Login({ onLogin }) {
       </div>
 
       <form
-        onSubmit={handleLogin}
+        onSubmit={showPasswordReset ? handlePasswordReset : handleLogin}
         className="relative z-10 w-full max-w-md bg-white/5 backdrop-blur-xl border border-white/10 p-10 rounded-3xl shadow-2xl text-center"
       >
 
@@ -76,35 +136,87 @@ export default function Login({ onLogin }) {
         </div>
 
         <h2 className="text-2xl font-bold text-white mb-6">
-          Zaloguj się do ligi
+          {showPasswordReset ? "Zmień hasło" : "Zaloguj się do ligi"}
         </h2>
 
-        <input
-          type="text"
-          placeholder="Nick"
-          value={username}
-          onChange={(event) => setUsername(event.target.value)}
-          className="w-full mb-5 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
-        />
+        {showPasswordReset ? (
+          <>
+            <p className="mb-5 text-sm font-medium text-gray-400">
+              Podaj nick i email zapisane w bazie, a potem ustaw nowe hasło.
+            </p>
 
-        <input
-          type="password"
-          placeholder="Hasło"
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          className="w-full mb-6 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
-        />
+            <input
+              type="text"
+              placeholder="Nick"
+              value={resetUsername}
+              onChange={(event) => setResetUsername(event.target.value)}
+              className="w-full mb-4 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
+            />
+
+            <input
+              type="email"
+              placeholder="Email"
+              value={resetEmail}
+              onChange={(event) => setResetEmail(event.target.value)}
+              className="w-full mb-4 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
+            />
+
+            <input
+              type="password"
+              placeholder="Nowe hasło"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              className="w-full mb-4 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
+            />
+
+            <input
+              type="password"
+              placeholder="Powtórz nowe hasło"
+              value={repeatPassword}
+              onChange={(event) => setRepeatPassword(event.target.value)}
+              className="w-full mb-6 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
+            />
+          </>
+        ) : (
+          <>
+            <input
+              type="text"
+              placeholder="Nick"
+              value={username}
+              onChange={(event) => setUsername(event.target.value)}
+              className="w-full mb-5 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
+            />
+
+            <input
+              type="password"
+              placeholder="Hasło"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full mb-6 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
+            />
+          </>
+        )}
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={showPasswordReset ? resetLoading : loading}
           className={`w-40 sm:w-44 py-3 rounded-full font-bold uppercase tracking-wider transition duration-300 shadow-lg ${
-            loading
+            (showPasswordReset ? resetLoading : loading)
               ? "bg-gray-600 cursor-not-allowed"
               : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600"
           }`}
         >
-          {loading ? "Logowanie..." : "Zaloguj się"}
+          {showPasswordReset
+            ? resetLoading ? "Zapisywanie..." : "Zmień hasło"
+            : loading ? "Logowanie..." : "Zaloguj się"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setShowPasswordReset(isVisible => !isVisible)}
+          className="mt-5 text-sm font-bold text-yellow-300 transition hover:text-yellow-200"
+        >
+          {showPasswordReset ? "Wróć do logowania" : "Nie pamiętasz hasła?"}
         </button>
 
       </form>

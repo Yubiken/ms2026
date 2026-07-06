@@ -1063,11 +1063,11 @@ export default function Matches({ onPredictionsChange }) {
                               </div>
 
                               {hasMatchFinalScore ? (
-                                <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 rounded-2xl border border-yellow-400/25 bg-yellow-500/10 px-3 py-2 shadow-lg shadow-yellow-500/10 sm:gap-4 sm:px-4 sm:py-3">
-                                  <div className="min-w-0 text-right text-sm font-black leading-snug tracking-wide sm:text-xl">
-                                    <TeamName name={match.home_team} className="justify-end" textClassName="truncate" />
+                                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 gap-y-1 rounded-2xl border border-yellow-400/25 bg-yellow-500/10 px-3 py-2 shadow-lg shadow-yellow-500/10 sm:grid-cols-[1fr_auto_1fr] sm:gap-4 sm:px-4 sm:py-3">
+                                  <div className="min-w-0 text-left text-sm font-black leading-snug tracking-wide sm:text-right sm:text-xl">
+                                    <TeamName name={match.home_team} className="justify-start sm:justify-end" textClassName="truncate" />
                                   </div>
-                                  <div className="rounded-2xl bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 px-3 py-1.5 text-xl font-black leading-none text-black shadow-lg shadow-orange-500/20 sm:px-4 sm:text-3xl">
+                                  <div className="row-span-2 rounded-xl bg-gradient-to-r from-yellow-400 via-orange-400 to-red-500 px-2.5 py-1 text-base font-black leading-none text-black shadow-lg shadow-orange-500/20 sm:row-auto sm:rounded-2xl sm:px-4 sm:py-1.5 sm:text-3xl">
                                     {match.home_score}:{match.away_score}
                                   </div>
                                   <div className="min-w-0 text-left text-sm font-black leading-snug tracking-wide sm:text-xl">

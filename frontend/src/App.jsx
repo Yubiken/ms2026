@@ -7,6 +7,7 @@ import Matches from "./pages/Matches"
 import Leaderboard from "./pages/Leaderboard"
 import Champion from "./pages/Champion"
 import Admin from "./pages/Admin"
+import Profile from "./pages/Profile"
 import { isAdminToken } from "./admin"
 import { apiRequest } from "./api"
 
@@ -135,6 +136,11 @@ export default function App() {
         <Route
           path="/champion"
           element={token ? <Champion /> : <Navigate to="/login" />}
+        />
+
+        <Route
+          path="/profile"
+          element={token ? <Profile onProfileUpdate={(newToken) => setToken(newToken)} /> : <Navigate to="/login" />}
         />
 
         <Route
