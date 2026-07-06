@@ -209,6 +209,8 @@ export default function Matches({ onPredictionsChange }) {
   const [showGroupStageMatches, setShowGroupStageMatches] = useState(false)
   const [showRoundOf32Matches, setShowRoundOf32Matches] = useState(false)
   const [showRoundOf16Matches, setShowRoundOf16Matches] = useState(false)
+  const [showQuarterFinalMatches, setShowQuarterFinalMatches] = useState(false)
+  const [showSemiFinalMatches, setShowSemiFinalMatches] = useState(false)
 
   const [selectedMatch, setSelectedMatch] = useState(null)
   const [homeScore, setHomeScore] = useState("")
@@ -594,6 +596,8 @@ export default function Matches({ onPredictionsChange }) {
   const groupStageMatches = filteredMatches.filter(match => (match.stage || "group") === "group")
   const roundOf32Matches = filteredMatches.filter(match => match.stage === "round_of_32")
   const roundOf16Matches = filteredMatches.filter(match => match.stage === "round_of_16")
+  const quarterFinalMatches = filteredMatches.filter(match => match.stage === "quarter_final")
+  const semiFinalMatches = filteredMatches.filter(match => match.stage === "semi_final")
   const visibleMatches = shouldShowStagePanels
     ? filteredMatches.filter(match => {
         const stage = match.stage || "group"
@@ -601,6 +605,8 @@ export default function Matches({ onPredictionsChange }) {
         if (stage === "group") return showGroupStageMatches
         if (stage === "round_of_32") return showRoundOf32Matches
         if (stage === "round_of_16") return showRoundOf16Matches
+        if (stage === "quarter_final") return showQuarterFinalMatches
+        if (stage === "semi_final") return showSemiFinalMatches
 
         return true
       })
@@ -615,6 +621,14 @@ export default function Matches({ onPredictionsChange }) {
   ).length
   const roundOf16TodoCount = roundOf16Matches.filter(match => getMatchState(match) === "todo").length
   const roundOf16PredictionsCount = roundOf16Matches.filter(match =>
+    myPredictions.some(prediction => prediction.match_id === match.id)
+  ).length
+  const quarterFinalTodoCount = quarterFinalMatches.filter(match => getMatchState(match) === "todo").length
+  const quarterFinalPredictionsCount = quarterFinalMatches.filter(match =>
+    myPredictions.some(prediction => prediction.match_id === match.id)
+  ).length
+  const semiFinalTodoCount = semiFinalMatches.filter(match => getMatchState(match) === "todo").length
+  const semiFinalPredictionsCount = semiFinalMatches.filter(match =>
     myPredictions.some(prediction => prediction.match_id === match.id)
   ).length
 
@@ -703,6 +717,14 @@ export default function Matches({ onPredictionsChange }) {
 
     if (stage === "round_of_16") {
       setShowRoundOf16Matches(true)
+    }
+
+    if (stage === "quarter_final") {
+      setShowQuarterFinalMatches(true)
+    }
+
+    if (stage === "semi_final") {
+      setShowSemiFinalMatches(true)
     }
 
     setPendingScrollMatchId(matchId)
@@ -973,6 +995,28 @@ export default function Matches({ onPredictionsChange }) {
             todoCount={roundOf16TodoCount}
             actionLabel={showRoundOf16Matches ? "Zwiń" : "Pokaż"}
             onAction={() => setShowRoundOf16Matches(isVisible => !isVisible)}
+          />
+        )}
+
+        {shouldShowStagePanels && quarterFinalMatches.length > 0 && (
+          <StageSummaryPanel
+            title="Ćwierćfinał"
+            matchesCount={quarterFinalMatches.length}
+            predictionsCount={quarterFinalPredictionsCount}
+            todoCount={quarterFinalTodoCount}
+            actionLabel={showQuarterFinalMatches ? "Zwiń" : "Pokaż"}
+            onAction={() => setShowQuarterFinalMatches(isVisible => !isVisible)}
+          />
+        )}
+
+        {shouldShowStagePanels && semiFinalMatches.length > 0 && (
+          <StageSummaryPanel
+            title="Półfinał"
+            matchesCount={semiFinalMatches.length}
+            predictionsCount={semiFinalPredictionsCount}
+            todoCount={semiFinalTodoCount}
+            actionLabel={showSemiFinalMatches ? "Zwiń" : "Pokaż"}
+            onAction={() => setShowSemiFinalMatches(isVisible => !isVisible)}
           />
         )}
 
