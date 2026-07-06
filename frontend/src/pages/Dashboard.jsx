@@ -172,12 +172,12 @@ export default function Dashboard() {
             <div className="mt-2 text-3xl font-black text-yellow-300">{summary.rank ? `#${summary.rank}` : "–"}</div>
             <div className="mt-2 text-xs font-semibold text-gray-500">na {summary.playersCount} graczy</div>
           </Link>
-          <Link to="/my-predictions" className="dashboard-stat rounded-2xl p-4 transition hover:-translate-y-0.5 sm:p-5">
+          <Link to="/leaderboard" className="dashboard-stat rounded-2xl p-4 transition hover:-translate-y-0.5 sm:p-5">
             <div className="text-xs font-bold uppercase tracking-wide text-gray-400">Zdobyte punkty</div>
             <div className="mt-2 text-3xl font-black text-orange-300">{summary.points}</div>
             <div className="mt-2 text-xs font-semibold text-gray-500">{summary.settledCount} rozliczonych typów</div>
           </Link>
-          <Link to="/my-predictions" className="dashboard-stat rounded-2xl p-4 transition hover:-translate-y-0.5 sm:p-5">
+          <Link to="/leaderboard" className="dashboard-stat rounded-2xl p-4 transition hover:-translate-y-0.5 sm:p-5">
             <div className="text-xs font-bold uppercase tracking-wide text-gray-400">Dokładne wyniki</div>
             <div className="mt-2 text-3xl font-black text-red-300">{summary.exactCount}</div>
             <div className="mt-2 text-xs font-semibold text-gray-500">trafienia za 2 punkty</div>
@@ -206,7 +206,7 @@ export default function Dashboard() {
           <div className="stadium-panel rounded-3xl p-5 sm:p-6">
             <div className="text-xs font-bold uppercase tracking-wide text-gray-400">Szybkie przejścia</div>
             <div className="mt-4 grid gap-2">
-              <Link to="/my-predictions" className="dashboard-shortcut">Sprawdź moje typy <ArrowIcon /></Link>
+              <Link to="/matches" className="dashboard-shortcut">Przejdź do meczów <ArrowIcon /></Link>
               <Link to="/leaderboard" className="dashboard-shortcut">Zobacz ranking ligi <ArrowIcon /></Link>
               <Link to="/champion" className="dashboard-shortcut">Wybierz mistrza <ArrowIcon /></Link>
             </div>

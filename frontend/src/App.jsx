@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react"
 import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
 import Matches from "./pages/Matches"
-import MyPredictions from "./pages/MyPredictions"
 import Leaderboard from "./pages/Leaderboard"
 import Champion from "./pages/Champion"
 import Admin from "./pages/Admin"
@@ -126,11 +125,6 @@ export default function App() {
         <Route
           path="/matches"
           element={token ? <Matches onPredictionsChange={handlePredictionsChange} /> : <Navigate to="/login" />}
-        />
-
-        <Route
-          path="/my-predictions"
-          element={token ? <MyPredictions /> : <Navigate to="/login" />}
         />
 
         <Route
