@@ -4,7 +4,6 @@ import { apiRequest } from "../api"
 import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
 import TeamName from "../components/TeamName"
-import UserAvatar from "../components/UserAvatar"
 
 const rankingModes = [
   { key: "points", label: "Punkty", endpoint: "/leaderboard", valueKey: "points" },
@@ -274,8 +273,6 @@ export default function Leaderboard() {
                         }`}>
                           {getMedal(user.position)}
                         </div>
-
-                        <UserAvatar username={user.username} avatarUrl={user.avatar_url} className="h-10 w-10 sm:h-11 sm:w-11" />
 
                         <div className="min-w-0">
                           <div className="truncate text-lg font-bold tracking-wide">

@@ -53,7 +53,6 @@ class UserResponse(BaseModel):
     id: int
     username: str
     email: EmailStr
-    avatar_url: str | None = None
 
     class Config:
         from_attributes = True
@@ -61,7 +60,6 @@ class UserResponse(BaseModel):
 
 class UserProfileUpdate(BaseModel):
     username: str = Field(..., min_length=2, max_length=40)
-    avatar_url: str | None = Field(default=None, max_length=500)
 
 
 # ===============================
@@ -85,24 +83,6 @@ def create_access_token(data: dict):
     expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def normalize_avatar_url(avatar_url: str | None) -> str | None:
-    if avatar_url is None:
-        return None
-
-    normalized_url = avatar_url.strip()
-
-    if not normalized_url:
-        return None
-
-    if not normalized_url.startswith(("https://", "http://")):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Avatar musi byÄ‡ adresem URL zaczynajÄ…cym siÄ™ od http:// lub https://"
-        )
-
-    return normalized_url
 
 
 # ===============================
@@ -257,8 +237,6 @@ def update_me(
         )
 
     current_user.username = username
-    current_user.avatar_url = normalize_avatar_url(payload.avatar_url)
-
     db.commit()
     db.refresh(current_user)
 
@@ -267,7 +245,6 @@ def update_me(
             "id": current_user.id,
             "username": current_user.username,
             "email": current_user.email,
-            "avatar_url": current_user.avatar_url,
         },
         "access_token": create_access_token({"sub": current_user.username}),
     }

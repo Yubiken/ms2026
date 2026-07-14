@@ -80,21 +80,6 @@ def ensure_prediction_unique_user_match_index():
         )
 
 
-def ensure_user_profile_columns():
-    inspector = inspect(engine)
-
-    if not inspector.has_table("users"):
-        return
-
-    existing_columns = {column["name"] for column in inspector.get_columns("users")}
-
-    if "avatar_url" in existing_columns:
-        return
-
-    with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR"))
-
-
 # Dependency do FastAPI
 def get_db():
     db = SessionLocal()

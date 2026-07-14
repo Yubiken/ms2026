@@ -3,7 +3,6 @@ import toast from "react-hot-toast"
 import { getToken, saveToken } from "../auth"
 import { apiRequest } from "../api"
 import PageLoader from "../components/PageLoader"
-import UserAvatar from "../components/UserAvatar"
 
 export default function Profile({ onProfileUpdate }) {
   const API = import.meta.env.VITE_API_URL
@@ -11,7 +10,6 @@ export default function Profile({ onProfileUpdate }) {
   const [saving, setSaving] = useState(false)
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
-  const [avatarUrl, setAvatarUrl] = useState("")
 
   useEffect(() => {
     apiRequest("/me")
@@ -20,7 +18,6 @@ export default function Profile({ onProfileUpdate }) {
 
         setUsername(data.username || "")
         setEmail(data.email || "")
-        setAvatarUrl(data.avatar_url || "")
       })
       .finally(() => setLoading(false))
   }, [])
@@ -44,7 +41,6 @@ export default function Profile({ onProfileUpdate }) {
         },
         body: JSON.stringify({
           username,
-          avatar_url: avatarUrl,
         }),
       })
 
@@ -59,17 +55,12 @@ export default function Profile({ onProfileUpdate }) {
       onProfileUpdate(data.access_token)
       setUsername(data.user.username || "")
       setEmail(data.user.email || "")
-      setAvatarUrl(data.user.avatar_url || "")
       toast.success("Profil zapisany")
     } catch {
       toast.error("Błąd serwera")
     } finally {
       setSaving(false)
     }
-  }
-
-  const clearAvatar = () => {
-    setAvatarUrl("")
   }
 
   if (loading) {
@@ -83,13 +74,12 @@ export default function Profile({ onProfileUpdate }) {
           <div className="text-sm font-bold uppercase tracking-[0.22em] text-green-300">Konto gracza</div>
           <h1 className="section-title mt-2 text-4xl font-black">Profil</h1>
           <p className="mt-3 max-w-xl text-sm font-medium text-gray-400 sm:text-base">
-            Zmień nick widoczny w rankingu i dodaj avatar z linku do obrazka.
+            Zmień nick widoczny w rankingu i w aplikacji.
           </p>
         </header>
 
         <form onSubmit={handleSubmit} className="stadium-panel rounded-3xl p-5 sm:p-7">
           <div className="mb-6 flex items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <UserAvatar username={username} avatarUrl={avatarUrl} className="h-16 w-16 text-2xl" />
             <div className="min-w-0">
               <div className="truncate text-xl font-black">{username || "Twój nick"}</div>
               <div className="truncate text-sm font-semibold text-gray-400">{email}</div>
@@ -117,20 +107,6 @@ export default function Profile({ onProfileUpdate }) {
             />
           </label>
 
-          <label className="mt-5 block">
-            <span className="text-xs font-bold uppercase tracking-wide text-gray-400">Avatar URL</span>
-            <input
-              type="url"
-              value={avatarUrl}
-              onChange={(event) => setAvatarUrl(event.target.value)}
-              placeholder="https://example.com/avatar.jpg"
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 font-semibold text-white outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-400/25"
-            />
-            <span className="mt-2 block text-xs font-semibold text-gray-500">
-              Wklej bezpośredni link do obrazka. Puste pole usuwa avatar.
-            </span>
-          </label>
-
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <button
               type="submit"
@@ -138,15 +114,6 @@ export default function Profile({ onProfileUpdate }) {
               className="rounded-full bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-3 font-black uppercase text-white shadow-lg shadow-green-500/15 transition hover:from-green-700 hover:to-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {saving ? "Zapisywanie..." : "Zapisz profil"}
-            </button>
-
-            <button
-              type="button"
-              onClick={clearAvatar}
-              disabled={saving || !avatarUrl}
-              className="rounded-full border border-white/10 bg-white/10 px-6 py-3 font-bold uppercase text-gray-200 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Usuń avatar
             </button>
           </div>
         </form>

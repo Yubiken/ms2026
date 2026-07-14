@@ -6,7 +6,6 @@ from .database import (
     ensure_match_external_columns,
     ensure_prediction_beers_column,
     ensure_prediction_unique_user_match_index,
-    ensure_user_profile_columns,
 )
 from .routes import users, predictions
 from app.routes import matches
@@ -17,7 +16,6 @@ Base.metadata.create_all(bind=engine)
 ensure_match_external_columns()
 ensure_prediction_beers_column()
 ensure_prediction_unique_user_match_index()
-ensure_user_profile_columns()
 print("Database connected and tables ready")
 
 app = FastAPI(
