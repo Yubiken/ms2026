@@ -99,7 +99,7 @@ export default function Register() {
           placeholder="Nick"
           value={username}
           onChange={(event) => setUsername(event.target.value)}
-          className="w-full mb-4 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
+          className="field-input mb-4"
         />
 
         <input
@@ -107,7 +107,7 @@ export default function Register() {
           placeholder="Email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
-          className="w-full mb-4 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
+          className="field-input mb-4"
         />
 
         <input
@@ -115,17 +115,13 @@ export default function Register() {
           placeholder="Hasło"
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full mb-6 p-3 rounded-xl bg-white/10 text-white border border-white/20 focus:border-red-500 focus:ring-2 focus:ring-red-500/40 outline-none transition"
+          className="field-input mb-6"
         />
 
         <button
           type="submit"
           disabled={loading}
-          className={`w-full py-3 rounded-full font-bold uppercase tracking-wider transition duration-300 shadow-lg ${
-            loading
-              ? "bg-gray-600 cursor-not-allowed"
-              : "bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800"
-          }`}
+          className="btn-primary w-full py-3"
         >
           {loading ? "Tworzenie konta..." : "Zarejestruj się"}
         </button>

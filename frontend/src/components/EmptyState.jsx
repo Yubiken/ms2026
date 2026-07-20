@@ -69,7 +69,7 @@ export default function EmptyState({
   icon = "matches",
   compact = false,
 }) {
-  const actionClassName = "mt-5 inline-flex items-center justify-center rounded-full bg-gradient-to-r from-green-600 to-emerald-500 px-5 py-2 text-sm font-bold uppercase text-white shadow-lg transition hover:from-green-700 hover:to-emerald-600"
+  const actionClassName = "btn-primary mt-5"
 
   return (
     <div className={`stadium-panel rounded-2xl text-center ${compact ? "p-5" : "p-8"}`}>

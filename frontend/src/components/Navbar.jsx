@@ -126,7 +126,7 @@ export default function Navbar({
 
   return (
     <>
-      <nav className="sticky top-0 z-40 border-b border-white/10 bg-[#070b12]/85 text-white shadow-xl backdrop-blur-xl">
+      <nav className="sticky top-0 z-40 border-b border-white/10 bg-[#070b12]/82 text-white shadow-xl shadow-black/20 backdrop-blur-2xl">
 
         <div className="max-w-7xl mx-auto px-4 py-4 sm:px-8">
 
@@ -134,7 +134,7 @@ export default function Navbar({
 
             <Link
               to="/dashboard"
-              className="min-w-0 text-lg font-black tracking-wide sm:text-2xl"
+              className="min-w-0 rounded-2xl px-1 text-lg font-black tracking-[-0.04em] transition hover:opacity-90 sm:text-2xl"
             >
               <span className="block truncate bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
                 {appTitle}
@@ -142,15 +142,13 @@ export default function Navbar({
             </Link>
 
             {token && (
-              <div className="hidden items-center gap-8 text-sm font-semibold uppercase tracking-widest md:flex">
+              <div className="hidden items-center gap-2 text-sm font-semibold uppercase tracking-widest md:flex">
 
                 {mobileNavItems.map(item => (
                   <NavLink
                     key={item.to}
                     to={item.to}
-                    className={({ isActive }) => `relative py-2 transition hover:text-white ${
-                      isActive ? "text-green-300" : "text-gray-300"
-                    }`}
+                    className={({ isActive }) => `nav-link ${isActive ? "nav-link-active" : ""}`}
                   >
                     {item.label === "Start" ? "Pulpit" : item.label}
                     {item.badge && (
@@ -163,14 +161,14 @@ export default function Navbar({
 
                 <Link
                   to="/profile"
-                  className="rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 font-semibold text-yellow-400 transition hover:bg-white/10"
+                  className="btn-ghost px-4 py-2 text-yellow-300"
                 >
                   <span className="max-w-36 truncate">{username}</span>
                 </Link>
 
                 <button
                   onClick={handleLogout}
-                  className="rounded-full bg-gradient-to-r from-red-600 to-red-700 px-4 py-2 text-sm font-bold transition hover:from-red-700 hover:to-red-800"
+                  className="btn-danger px-4 py-2 text-sm"
                 >
                   Wyloguj
                 </button>
@@ -181,7 +179,7 @@ export default function Navbar({
             {token && (
               <button
                 onClick={() => setMobileOpen(!mobileOpen)}
-                className="flex-shrink-0 rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-bold uppercase tracking-wide transition hover:bg-white/15 md:hidden"
+                className="btn-ghost flex-shrink-0 px-3 py-2 text-xs uppercase tracking-wide md:hidden"
                 aria-label="Otwórz menu konta"
               >
                 Konto
@@ -191,19 +189,19 @@ export default function Navbar({
           </div>
 
           {mobileOpen && token && (
-            <div className="mt-4 flex flex-col gap-4 border-t border-white/10 pt-4 text-sm font-semibold uppercase tracking-widest md:hidden">
+            <div className="glass-card mt-4 flex flex-col gap-4 rounded-3xl p-4 text-sm font-semibold uppercase tracking-widest md:hidden">
 
               <Link
                 to="/profile"
                 onClick={() => setMobileOpen(false)}
-                className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-yellow-400"
+                className="rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-yellow-300"
               >
                 <span className="min-w-0 truncate">{username}</span>
               </Link>
 
               <button
                 onClick={handleLogout}
-                className="rounded-full bg-gradient-to-r from-red-600 to-red-700 px-4 py-2 font-bold"
+                className="btn-danger px-4 py-2 font-bold"
               >
                 Wyloguj
               </button>
@@ -215,7 +213,7 @@ export default function Navbar({
       </nav>
 
       {token && (
-        <nav className="fixed inset-x-3 bottom-3 z-40 rounded-3xl border border-white/10 bg-[#070b12]/95 px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-white shadow-2xl shadow-black/50 backdrop-blur-xl md:hidden">
+        <nav className="glass-card fixed inset-x-3 bottom-3 z-40 rounded-3xl px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-white md:hidden">
           <div className={`grid gap-1 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}>
             {mobileNavItems.map(item => (
               <NavLink

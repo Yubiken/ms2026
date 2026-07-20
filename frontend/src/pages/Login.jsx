@@ -169,7 +169,7 @@ export default function Login({ onLogin }) {
                   value={resetUsername}
                   onChange={(event) => setResetUsername(event.target.value)}
                   autoComplete="username"
-                  className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-400/20"
+                  className="field-input"
                 />
               </label>
 
@@ -180,7 +180,7 @@ export default function Login({ onLogin }) {
                   value={resetEmail}
                   onChange={(event) => setResetEmail(event.target.value)}
                   autoComplete="email"
-                  className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-400/20"
+                  className="field-input"
                 />
               </label>
 
@@ -191,7 +191,7 @@ export default function Login({ onLogin }) {
                   value={newPassword}
                   onChange={(event) => setNewPassword(event.target.value)}
                   autoComplete="new-password"
-                  className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-400/20"
+                  className="field-input"
                 />
               </label>
 
@@ -202,7 +202,7 @@ export default function Login({ onLogin }) {
                   value={repeatPassword}
                   onChange={(event) => setRepeatPassword(event.target.value)}
                   autoComplete="new-password"
-                  className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-400/20"
+                  className="field-input"
                 />
               </label>
             </div>
@@ -216,7 +216,7 @@ export default function Login({ onLogin }) {
                   onChange={(event) => setUsername(event.target.value)}
                   autoComplete="username"
                   placeholder="Twój nick"
-                  className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-400/20"
+                  className="field-input"
                 />
               </label>
 
@@ -228,7 +228,7 @@ export default function Login({ onLogin }) {
                   onChange={(event) => setPassword(event.target.value)}
                   autoComplete="current-password"
                   placeholder="Twoje hasło"
-                  className="rounded-2xl border border-white/15 bg-black/20 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-yellow-300 focus:ring-2 focus:ring-yellow-400/20"
+                  className="field-input"
                 />
               </label>
             </div>
@@ -237,7 +237,7 @@ export default function Login({ onLogin }) {
           <button
             type="submit"
             disabled={showPasswordReset ? resetLoading : loading}
-            className="mt-6 w-full rounded-2xl bg-gradient-to-r from-green-500 to-emerald-400 px-5 py-3.5 font-black uppercase tracking-wide text-black shadow-xl shadow-green-500/20 transition hover:scale-[1.01] disabled:cursor-not-allowed disabled:opacity-60"
+            className="btn-primary mt-6 w-full py-3.5"
           >
             {showPasswordReset
               ? resetLoading ? "Zapisywanie..." : "Zapisz nowe hasło"

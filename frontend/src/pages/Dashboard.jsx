@@ -158,7 +158,7 @@ export default function Dashboard({
                   onChange={(event) => setJoinCode(event.target.value.toUpperCase().replace(/[^A-Z0-9-_]/g, "").slice(0, 32))}
                   placeholder="np. MS2026"
                   disabled={joining}
-                  className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-center text-lg font-black uppercase tracking-[0.12em] text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="field-input text-center text-lg font-black uppercase tracking-[0.12em]"
                 />
               </label>
             </div>
@@ -167,7 +167,7 @@ export default function Dashboard({
               type="button"
               onClick={joinActiveCompetition}
               disabled={joining}
-              className="mt-5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 px-7 py-3.5 font-black uppercase text-black shadow-xl shadow-green-500/20 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="btn-primary mt-5 px-7 py-3.5"
             >
               {joining ? "Dołączanie..." : "Dołącz do turnieju"}
             </button>
@@ -190,7 +190,7 @@ export default function Dashboard({
               Wszystko, co ważne przed pierwszym gwizdkiem, w jednym miejscu.
             </p>
           </div>
-          <Link to="/matches" className="inline-flex items-center gap-2 self-start rounded-full border border-white/15 bg-white/[0.06] px-5 py-2.5 text-sm font-bold transition hover:bg-white/10 sm:self-auto">
+          <Link to="/matches" className="btn-ghost self-start sm:self-auto">
             Pełny terminarz <ArrowIcon />
           </Link>
         </header>
@@ -235,7 +235,7 @@ export default function Dashboard({
             {primaryMatch && (
               <Link
                 to={`/matches?edit=${primaryMatch.id}`}
-                className="inline-flex min-w-44 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 px-6 py-3.5 font-black uppercase text-black shadow-xl shadow-green-500/20 transition hover:scale-[1.02]"
+                className="btn-primary min-w-44 px-6 py-3.5"
               >
                 {primaryAction} <ArrowIcon />
               </Link>

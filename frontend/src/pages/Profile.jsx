@@ -93,7 +93,7 @@ export default function Profile({ onProfileUpdate }) {
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               maxLength={40}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-white/10 px-4 py-3 font-bold text-white outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-400/25"
+              className="field-input mt-2"
             />
           </label>
 
@@ -103,7 +103,7 @@ export default function Profile({ onProfileUpdate }) {
               type="email"
               value={email}
               disabled
-              className="mt-2 w-full cursor-not-allowed rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 font-semibold text-gray-400 outline-none"
+              className="field-input mt-2 text-gray-400"
             />
           </label>
 
@@ -111,7 +111,7 @@ export default function Profile({ onProfileUpdate }) {
             <button
               type="submit"
               disabled={saving}
-              className="rounded-full bg-gradient-to-r from-green-600 to-emerald-500 px-6 py-3 font-black uppercase text-white shadow-lg shadow-green-500/15 transition hover:from-green-700 hover:to-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="btn-primary px-6 py-3"
             >
               {saving ? "Zapisywanie..." : "Zapisz profil"}
             </button>
