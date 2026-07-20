@@ -1,6 +1,5 @@
 from datetime import date
 import logging
-import os
 import re
 import unicodedata
 
@@ -9,8 +8,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Competition, Match, User
+from app.models import Competition, CompetitionParticipant, Match, User
 from app.schemas.match import MatchResultUpdate
+from app.services.admins import get_admin_users
 from app.services.competitions import get_active_competition_id
 from app.services.external_results import (
     ExternalResultsError,
@@ -30,14 +30,6 @@ class CompetitionCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=80)
     slug: str | None = Field(default=None, max_length=80)
     join_code: str = Field(..., min_length=3, max_length=32)
-
-
-def get_admin_users() -> set[str]:
-    return {
-        username.strip()
-        for username in os.getenv("ADMIN_USERS", "").split(",")
-        if username.strip()
-    }
 
 
 def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:
@@ -84,6 +76,25 @@ def build_unique_slug(db: Session, slug: str | None, name: str) -> str:
 
 def normalize_join_code(join_code: str) -> str:
     return "".join(character for character in join_code.strip().upper() if character.isalnum() or character in "-_")
+
+
+def ensure_competition_participant(db: Session, competition_id: int, user_id: int) -> None:
+    existing = (
+        db.query(CompetitionParticipant)
+        .filter(
+            CompetitionParticipant.competition_id == competition_id,
+            CompetitionParticipant.user_id == user_id,
+        )
+        .first()
+    )
+
+    if not existing:
+        db.add(
+            CompetitionParticipant(
+                competition_id=competition_id,
+                user_id=user_id,
+            )
+        )
 
 
 @router.get("/competitions")
@@ -134,6 +145,8 @@ def create_competition(
     )
 
     db.add(competition)
+    db.flush()
+    ensure_competition_participant(db, competition.id, current_user.id)
     db.commit()
     db.refresh(competition)
 
@@ -155,6 +168,7 @@ def activate_competition(
 
     db.query(Competition).update({Competition.is_active: False})
     competition.is_active = True
+    ensure_competition_participant(db, competition.id, current_user.id)
     db.commit()
     db.refresh(competition)
 

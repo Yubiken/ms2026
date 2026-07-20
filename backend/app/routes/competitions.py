@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Competition, CompetitionParticipant, User
+from ..services.admins import is_admin_username
 from ..services.competitions import get_active_competition
 from .users import get_current_user
 
@@ -58,6 +59,24 @@ def get_participation(db: Session, competition_id: int, user_id: int) -> Competi
     )
 
 
+def create_participation(db: Session, competition_id: int, user_id: int) -> CompetitionParticipant | None:
+    participation = CompetitionParticipant(
+        competition_id=competition_id,
+        user_id=user_id,
+    )
+
+    db.add(participation)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return get_participation(db, competition_id, user_id)
+
+    db.refresh(participation)
+    return participation
+
+
 @router.get("/competition-participation/active")
 def get_active_competition_participation(
     db: Session = Depends(get_db),
@@ -73,6 +92,9 @@ def get_active_competition_participation(
         }
 
     participation = get_participation(db, competition.id, current_user.id)
+
+    if not participation and is_admin_username(current_user.username):
+        participation = create_participation(db, competition.id, current_user.id)
 
     return {
         "competition": serialize_competition(competition),

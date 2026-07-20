@@ -97,7 +97,7 @@ def create_prediction(
         if not participation:
             raise HTTPException(
                 status_code=403,
-                detail="Join this competition before predicting"
+                detail="Dołącz do turnieju przed typowaniem"
             )
 
     now = datetime.now(timezone.utc)

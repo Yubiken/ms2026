@@ -285,8 +285,8 @@ export default function Matches({ onPredictionsChange }) {
       setMatchPredictions(data)
       setPredictionsModal(match)
 
-    } catch {
-      toast.error("Błąd serwera")
+    } catch (error) {
+      toast.error(error.message || "Błąd serwera")
     }
   }
 
@@ -403,8 +403,8 @@ export default function Matches({ onPredictionsChange }) {
 
       onPredictionsChange?.(existing ? 0 : -1)
 
-    } catch {
-      toast.error("Błąd serwera")
+    } catch (error) {
+      toast.error(error.message || "Błąd serwera")
     }
   }
 
