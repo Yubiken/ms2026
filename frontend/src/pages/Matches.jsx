@@ -18,14 +18,6 @@ const statusFilters = [
 const groupFilters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]
 const popularScores = ["1:0", "1:1", "2:1", "2:0"]
 
-const clampBeerCount = (value) => {
-  const parsed = Number(value)
-
-  if (!Number.isFinite(parsed)) return 0
-
-  return Math.min(99, Math.max(0, Math.trunc(parsed)))
-}
-
 const stageLabels = {
   group: "Faza grupowa",
   round_of_32: "1/16 finału",
@@ -216,9 +208,6 @@ export default function Matches({ onPredictionsChange }) {
   const [homeScore, setHomeScore] = useState("")
   const [awayScore, setAwayScore] = useState("")
   const [pendingScrollMatchId, setPendingScrollMatchId] = useState(null)
-  const [beerDrafts, setBeerDrafts] = useState({})
-  const [savingBeerId, setSavingBeerId] = useState(null)
-
   const [predictionsModal, setPredictionsModal] = useState(null)
   const [matchPredictions, setMatchPredictions] = useState([])
   const [searchParams, setSearchParams] = useSearchParams()
@@ -312,7 +301,6 @@ export default function Matches({ onPredictionsChange }) {
     final_away_score: responseData?.final_away_score ?? match.away_score,
     prediction_home: responseData?.prediction_home ?? home,
     prediction_away: responseData?.prediction_away ?? away,
-    beers_count: responseData?.beers_count ?? existing?.beers_count ?? 0,
     points: responseData?.points ?? existing?.points ?? 0,
   })
 
@@ -330,68 +318,6 @@ export default function Matches({ onPredictionsChange }) {
         item.match_id === prediction.match_id ? prediction : item
       )
     })
-  }
-
-  const getBeerDraftValue = (prediction) => {
-    const draft = beerDrafts[prediction.id]
-
-    if (draft != null) return draft
-
-    return String(Number(prediction.beers_count ?? 0))
-  }
-
-  const setBeerDraftValue = (predictionId, value) => {
-    if (value === "") {
-      setBeerDrafts(current => ({
-        ...current,
-        [predictionId]: "",
-      }))
-      return
-    }
-
-    setBeerDrafts(current => ({
-      ...current,
-      [predictionId]: String(clampBeerCount(value)),
-    }))
-  }
-
-  const saveBeerCount = async (prediction, rawValue) => {
-    const beersCount = clampBeerCount(rawValue)
-
-    setSavingBeerId(prediction.id)
-
-    try {
-      const data = await apiRequest(`/predictions/${prediction.id}/beers`, {
-        method: "PUT",
-        body: JSON.stringify({
-          beers_count: beersCount,
-        }),
-      })
-
-      if (!data) return
-
-      upsertMyPrediction(data)
-      setBeerDrafts(current => ({
-        ...current,
-        [prediction.id]: String(data.beers_count ?? beersCount),
-      }))
-    } catch {
-      toast.error("Nie udało się zapisać piwek")
-    } finally {
-      setSavingBeerId(null)
-    }
-  }
-
-  const adjustBeerCount = (prediction, delta) => {
-    const currentValue = clampBeerCount(getBeerDraftValue(prediction))
-    const nextValue = clampBeerCount(currentValue + delta)
-
-    setBeerDrafts(current => ({
-      ...current,
-      [prediction.id]: String(nextValue),
-    }))
-
-    saveBeerCount(prediction, nextValue)
   }
 
   const submitPrediction = async () => {
@@ -1073,8 +999,6 @@ export default function Matches({ onPredictionsChange }) {
                       const myPrediction = myPredictions.find(p => p.match_id === match.id)
                       const status = getMatchStatus(match)
                       const hasMatchFinalScore = match.is_finished && match.home_score != null && match.away_score != null
-                      const beerValue = myPrediction ? getBeerDraftValue(myPrediction) : "0"
-                      const isSavingBeer = myPrediction && savingBeerId === myPrediction.id
                       const predictionButtonClass = myPrediction
                         ? "bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
                         : "bg-gradient-to-r from-green-600 to-emerald-500 hover:from-green-700 hover:to-emerald-600 text-white"
@@ -1143,50 +1067,6 @@ export default function Matches({ onPredictionsChange }) {
                             </div>
 
                             <div className="flex flex-shrink-0 flex-col items-end gap-2">
-                              {myPrediction && (
-                                <div className="flex flex-col items-end gap-1">
-                                  <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-gray-500">
-                                    <span aria-hidden="true">🍺</span>
-                                    <span>Piwka</span>
-                                  </div>
-                                  <div className="flex items-center rounded-full border border-white/10 bg-white/[0.06] p-1">
-                                    <button
-                                      type="button"
-                                      onClick={() => adjustBeerCount(myPrediction, -1)}
-                                      disabled={isSavingBeer || clampBeerCount(beerValue) <= 0}
-                                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-base font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-35"
-                                      aria-label="Zmniejsz liczbę piwek"
-                                    >
-                                      -
-                                    </button>
-                                    <input
-                                      type="text"
-                                      inputMode="numeric"
-                                      pattern="[0-9]*"
-                                      value={beerValue}
-                                      onChange={(event) => setBeerDraftValue(myPrediction.id, event.target.value)}
-                                      onBlur={() => saveBeerCount(myPrediction, beerValue)}
-                                      onKeyDown={(event) => {
-                                        if (event.key === "Enter") {
-                                          event.currentTarget.blur()
-                                        }
-                                      }}
-                                      className="h-7 w-10 bg-transparent text-center text-sm font-black text-green-300 outline-none"
-                                      aria-label="Liczba piwek wypitych podczas meczu"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => adjustBeerCount(myPrediction, 1)}
-                                      disabled={isSavingBeer || clampBeerCount(beerValue) >= 99}
-                                      className="flex h-7 w-7 items-center justify-center rounded-full bg-white/10 text-base font-black text-white transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-35"
-                                      aria-label="Zwiększ liczbę piwek"
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-
                               {!isStarted ? (
                                 <button
                                   onClick={() => openModal(match)}

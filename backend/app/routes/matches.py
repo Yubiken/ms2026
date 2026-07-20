@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Match, Prediction, User
+from ..services.competitions import get_active_competition_id
 from .users import get_current_user
 
 router = APIRouter(tags=["Matches"])
@@ -19,6 +20,7 @@ class MatchCreate(BaseModel):
     start_time: datetime
     stage: str
     group_name: str | None = None
+    competition_id: int | None = None
     external_source: str | None = None
     external_id: str | None = None
 
@@ -36,7 +38,7 @@ def to_utc(dt: datetime) -> datetime:
     return dt.astimezone(timezone.utc)
 
 
-def build_match(match: MatchCreate) -> Match:
+def build_match(match: MatchCreate, competition_id: int | None) -> Match:
     start_time = match.start_time
 
     if start_time.tzinfo is None:
@@ -46,6 +48,7 @@ def build_match(match: MatchCreate) -> Match:
     start_time_utc = start_time.astimezone(timezone.utc)
 
     return Match(
+        competition_id=competition_id,
         home_team=match.home_team,
         away_team=match.away_team,
         start_time=start_time_utc,
@@ -66,7 +69,8 @@ def create_match(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    new_match = build_match(match)
+    competition_id = match.competition_id or get_active_competition_id(db)
+    new_match = build_match(match, competition_id)
 
     db.add(new_match)
     db.commit()
@@ -92,7 +96,11 @@ def create_matches_bulk(
     if not payload.matches:
         raise HTTPException(status_code=400, detail="No matches provided")
 
-    new_matches = [build_match(match) for match in payload.matches]
+    active_competition_id = get_active_competition_id(db)
+    new_matches = [
+        build_match(match, match.competition_id or active_competition_id)
+        for match in payload.matches
+    ]
 
     db.add_all(new_matches)
     db.commit()
@@ -111,7 +119,11 @@ def create_matches_bulk(
     "/matches",
     summary="Lista meczow",
 )
-def get_matches(db: Session = Depends(get_db)):
+def get_matches(
+    competition_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    selected_competition_id = competition_id or get_active_competition_id(db)
     prediction_counts = (
         db.query(
             Prediction.match_id,
@@ -121,19 +133,23 @@ def get_matches(db: Session = Depends(get_db)):
         .subquery()
     )
 
-    matches = (
+    query = (
         db.query(
             Match,
             func.coalesce(prediction_counts.c.predictions_count, 0).label("predictions_count"),
         )
         .outerjoin(prediction_counts, Match.id == prediction_counts.c.match_id)
-        .order_by(Match.start_time.asc())
-        .all()
     )
+
+    if selected_competition_id is not None:
+        query = query.filter(Match.competition_id == selected_competition_id)
+
+    matches = query.order_by(Match.start_time.asc()).all()
 
     return [
         {
             "id": m.id,
+            "competition_id": m.competition_id,
             "home_team": m.home_team,
             "away_team": m.away_team,
             "start_time": m.start_time,

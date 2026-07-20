@@ -5,6 +5,31 @@ from .database import Base
 
 
 # ==============================
+# COMPETITION
+# ==============================
+
+class Competition(Base):
+    __tablename__ = "competitions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    slug = Column(String, unique=True, index=True, nullable=False)
+    is_active = Column(Boolean, default=False, nullable=False)
+
+    created_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+
+    matches = relationship("Match", back_populates="competition")
+    participants = relationship(
+        "CompetitionParticipant",
+        back_populates="competition",
+        cascade="all, delete-orphan",
+    )
+
+
+# ==============================
 # USER
 # ==============================
 
@@ -22,12 +47,40 @@ class User(Base):
         back_populates="user",
         cascade="all, delete-orphan"
     )
+    competition_participations = relationship(
+        "CompetitionParticipant",
+        back_populates="user",
+        cascade="all, delete-orphan"
+    )
     champion_pick = relationship(
         "ChampionPick",
         back_populates="user",
         cascade="all, delete-orphan",
         uselist=False
     )
+
+
+# ==============================
+# COMPETITION PARTICIPANT
+# ==============================
+
+class CompetitionParticipant(Base):
+    __tablename__ = "competition_participants"
+    __table_args__ = (
+        UniqueConstraint("competition_id", "user_id", name="uq_competition_participants_competition_user"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    competition_id = Column(Integer, ForeignKey("competitions.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    joined_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now()
+    )
+
+    competition = relationship("Competition", back_populates="participants")
+    user = relationship("User", back_populates="competition_participations")
 
 
 # ==============================
@@ -38,6 +91,7 @@ class Match(Base):
     __tablename__ = "matches"
 
     id = Column(Integer, primary_key=True, index=True)
+    competition_id = Column(Integer, ForeignKey("competitions.id"), nullable=True, index=True)
 
     home_team = Column(String, nullable=False)
     away_team = Column(String, nullable=False)
@@ -72,6 +126,7 @@ class Match(Base):
         back_populates="match",
         cascade="all, delete-orphan"
     )
+    competition = relationship("Competition", back_populates="matches")
 
 
 # ==============================
@@ -93,8 +148,6 @@ class Prediction(Base):
     away_score = Column(Integer, nullable=False)
 
     points = Column(Integer, default=0)
-    beers_count = Column(Integer, default=0, nullable=False)
-
     user = relationship("User", back_populates="predictions")
     match = relationship("Match", back_populates="predictions")
 

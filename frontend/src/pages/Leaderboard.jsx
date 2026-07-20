@@ -5,11 +5,6 @@ import EmptyState from "../components/EmptyState"
 import PageLoader from "../components/PageLoader"
 import TeamName from "../components/TeamName"
 
-const rankingModes = [
-  { key: "points", label: "Punkty", endpoint: "/leaderboard", valueKey: "points" },
-  { key: "beers", label: "Piwka", endpoint: "/beer-leaderboard", valueKey: "beers" },
-]
-
 const stageLabels = {
   group: "Faza grupowa",
   round_of_32: "1/16 finału",
@@ -18,15 +13,6 @@ const stageLabels = {
   semi_final: "Półfinał",
   third_place: "Mecz o 3. miejsce",
   final: "Finał",
-}
-
-const getBeerCountLabel = (count) => {
-  const value = Number(count ?? 0)
-
-  if (value === 1) return "1 piwo"
-  if (value >= 2 && value <= 4) return `${value} piwa`
-
-  return `${value} piwek`
 }
 
 const getAccuracyLabel = (user) => {
@@ -116,7 +102,7 @@ function SeasonStats({ stats }) {
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-3">
         <div className="rounded-2xl border border-green-400/20 bg-green-500/10 p-4">
           <div className="text-xs font-bold uppercase tracking-wide text-green-300">Skuteczność ligi</div>
           <div className="mt-2 text-3xl font-black text-white">{stats.league_accuracy ?? 0}%</div>
@@ -126,11 +112,6 @@ function SeasonStats({ stats }) {
           <div className="text-xs font-bold uppercase tracking-wide text-yellow-300">Dokładne wyniki</div>
           <div className="mt-2 text-3xl font-black text-white">{stats.exact_hits}</div>
           <div className="mt-1 text-xs font-semibold text-gray-400">{stats.exact_rate ?? 0}% wszystkich typów</div>
-        </div>
-        <div className="rounded-2xl border border-orange-400/20 bg-orange-500/10 p-4">
-          <div className="text-xs font-bold uppercase tracking-wide text-orange-300">Piwka</div>
-          <div className="mt-2 text-3xl font-black text-white">{stats.total_beers}</div>
-          <div className="mt-1 text-xs font-semibold text-gray-400">łącznie przy meczach</div>
         </div>
         <div className="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
           <div className="text-xs font-bold uppercase tracking-wide text-blue-300">Średnio</div>
@@ -221,11 +202,7 @@ function SeasonStats({ stats }) {
 
 export default function Leaderboard() {
 
-  const [rankings, setRankings] = useState({
-    points: [],
-    beers: [],
-  })
-  const [activeMode, setActiveMode] = useState("points")
+  const [ranking, setRanking] = useState([])
   const [loading, setLoading] = useState(true)
   const [historyModal, setHistoryModal] = useState(null)
   const [historyLoading, setHistoryLoading] = useState(false)
@@ -236,24 +213,21 @@ export default function Leaderboard() {
   useEffect(() => {
     Promise.all([
       apiRequest("/leaderboard"),
-      apiRequest("/beer-leaderboard"),
       apiRequest("/season-stats"),
     ])
-      .then(([pointsData, beersData, statsData]) => {
-        const buildRanking = (data, valueKey) => {
+      .then(([pointsData, statsData]) => {
+        const buildRanking = (data) => {
           if (!Array.isArray(data)) return []
 
           return [...data]
             .sort((a, b) => {
-              const valueDiff = Number(b[valueKey] ?? 0) - Number(a[valueKey] ?? 0)
+              const valueDiff = Number(b.points ?? 0) - Number(a.points ?? 0)
 
               if (valueDiff !== 0) return valueDiff
 
-              if (valueKey === "points") {
-                const exactScoreDiff = Number(b.exact_score_count ?? 0) - Number(a.exact_score_count ?? 0)
+              const exactScoreDiff = Number(b.exact_score_count ?? 0) - Number(a.exact_score_count ?? 0)
 
-                if (exactScoreDiff !== 0) return exactScoreDiff
-              }
+              if (exactScoreDiff !== 0) return exactScoreDiff
 
               return String(a.username).localeCompare(String(b.username), "pl")
             })
@@ -263,36 +237,28 @@ export default function Leaderboard() {
             }))
         }
 
-        setRankings({
-          points: buildRanking(pointsData, "points"),
-          beers: buildRanking(beersData, "beers"),
-        })
+        setRanking(buildRanking(pointsData))
         setSeasonStats(statsData)
         setLoading(false)
       })
       .catch(() => setLoading(false))
   }, [])
 
-  const activeConfig = rankingModes.find(mode => mode.key === activeMode) ?? rankingModes[0]
-  const ranking = rankings[activeConfig.key]
-  const valueKey = activeConfig.valueKey
-  const isBeerMode = activeMode === "beers"
-
   if (loading) {
     return <PageLoader title="Ranking Ligi" subtitle="Przeliczam tabelę" cards={5} />
   }
 
   const leader = ranking[0]
-  const leaderValue = Number(leader?.[valueKey] ?? 0)
+  const leaderValue = Number(leader?.points ?? 0)
   const totalPlayers = ranking.length
-  const totalValue = ranking.reduce((sum, user) => sum + Number(user[valueKey] ?? 0), 0)
+  const totalValue = ranking.reduce((sum, user) => sum + Number(user.points ?? 0), 0)
   const averageValue = totalPlayers > 0 ? (totalValue / totalPlayers).toFixed(1) : "0.0"
   const currentUserRank = ranking.find(user => user.username === currentUser)
 
   const formatValue = (value) => {
     const normalizedValue = Number(value ?? 0)
 
-    return isBeerMode ? getBeerCountLabel(normalizedValue) : `${normalizedValue} pkt`
+    return `${normalizedValue} pkt`
   }
 
   const getMedal = (position) => {
@@ -329,7 +295,6 @@ export default function Leaderboard() {
       username: user.username,
       predictions: [],
       points: 0,
-      beers: 0,
     })
 
     try {
@@ -340,7 +305,6 @@ export default function Leaderboard() {
           username: user.username,
           predictions: [],
           points: 0,
-          beers: 0,
         })
         setHistoryError("Nie udało się pobrać historii tego gracza.")
         return
@@ -361,32 +325,9 @@ export default function Leaderboard() {
 
         <div className="text-center mb-8">
           <h1 className="section-title text-3xl font-black">
-            {isBeerMode ? "Ranking Piwny" : "Ranking Ligi"}
+            Ranking Ligi
           </h1>
           <div className="h-1 w-40 mx-auto mt-4 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full" />
-        </div>
-
-        <div className="mb-8 flex justify-center">
-          <div className="inline-flex rounded-full border border-white/10 bg-white/10 p-1">
-            {rankingModes.map(mode => {
-              const isActive = mode.key === activeMode
-
-              return (
-                <button
-                  key={mode.key}
-                  type="button"
-                  onClick={() => setActiveMode(mode.key)}
-                  className={`rounded-full px-5 py-2 text-sm font-bold uppercase transition ${
-                    isActive
-                      ? "bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 text-black"
-                      : "text-gray-300 hover:bg-white/10"
-                  }`}
-                >
-                  {mode.label}
-                </button>
-              )
-            })}
-          </div>
         </div>
 
         <SeasonStats stats={seasonStats} />
@@ -395,10 +336,7 @@ export default function Leaderboard() {
           <EmptyState
             icon="ranking"
             title="Ranking jest jeszcze pusty"
-            description={isBeerMode
-              ? "Ranking piwny ruszy, gdy ktoś zapisze pierwsze piwka przy meczu."
-              : "Tabela zacznie żyć, gdy pojawią się pierwsze typy i rozliczone wyniki."
-            }
+            description="Tabela zacznie żyć, gdy pojawią się pierwsze typy i rozliczone wyniki."
             actionLabel="Przejdź do meczów"
             actionTo="/matches"
           />
@@ -418,7 +356,7 @@ export default function Leaderboard() {
               <div className="stadium-panel rounded-2xl p-4">
                 <div className="text-xs uppercase tracking-wide text-gray-400">Średnia</div>
                 <div className="mt-1 text-2xl font-black text-yellow-300">
-                  {isBeerMode ? getBeerCountLabel(averageValue) : averageValue}
+                  {averageValue}
                 </div>
               </div>
 
@@ -435,7 +373,7 @@ export default function Leaderboard() {
               {ranking.map((user) => {
 
                 const isCurrentUser = user.username === currentUser
-                const value = Number(user[valueKey] ?? 0)
+                const value = Number(user.points ?? 0)
                 const diff = leaderValue - value
 
                 return (
@@ -476,16 +414,14 @@ export default function Leaderboard() {
                             </div>
                           )}
 
-                          {!isBeerMode && (
-                            <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
-                              <span className="rounded-full border border-green-400/20 bg-green-500/15 px-2.5 py-1 text-green-300">
-                                {getAccuracyLabel(user)}
-                              </span>
-                              <span className="rounded-full border border-yellow-400/20 bg-yellow-500/15 px-2.5 py-1 text-yellow-300">
-                                {getExactScoreLabel(user.exact_score_count)}
-                              </span>
-                            </div>
-                          )}
+                          <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold">
+                            <span className="rounded-full border border-green-400/20 bg-green-500/15 px-2.5 py-1 text-green-300">
+                              {getAccuracyLabel(user)}
+                            </span>
+                            <span className="rounded-full border border-yellow-400/20 bg-yellow-500/15 px-2.5 py-1 text-yellow-300">
+                              {getExactScoreLabel(user.exact_score_count)}
+                            </span>
+                          </div>
 
                           <div className="mt-1 text-xs font-semibold text-gray-500">
                             Kliknij, aby zobaczyć historię
@@ -500,7 +436,7 @@ export default function Leaderboard() {
                             {value}
                           </div>
                           <div className="text-xs uppercase tracking-wide text-gray-500">
-                            {isBeerMode ? "piwka" : "pkt"}
+                            pkt
                           </div>
                         </div>
 
@@ -624,16 +560,10 @@ export default function Leaderboard() {
                   )
                 })()}
 
-                <div className="mb-4 grid grid-cols-2 gap-3">
+                <div className="mb-4 grid gap-3">
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
                     <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Punkty</div>
                     <div className="mt-1 text-2xl font-black text-yellow-300">{historyModal.points}</div>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="text-xs font-bold uppercase tracking-wide text-gray-500">Piwka</div>
-                    <div className="mt-1 text-2xl font-black text-green-300">
-                      {getBeerCountLabel(historyModal.beers)}
-                    </div>
                   </div>
                 </div>
 
@@ -677,11 +607,6 @@ export default function Leaderboard() {
                           {hasFinalScore && (
                             <span className="rounded-full border border-white/10 bg-white/10 px-2.5 py-1 text-gray-200">
                               Wynik: {prediction.final_home_score}:{prediction.final_away_score}
-                            </span>
-                          )}
-                          {Number(prediction.beers_count ?? 0) > 0 && (
-                            <span className="rounded-full border border-green-400/25 bg-green-500/15 px-2.5 py-1 text-green-300">
-                              {getBeerCountLabel(prediction.beers_count)}
                             </span>
                           )}
                         </div>

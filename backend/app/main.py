@@ -4,17 +4,22 @@ from .database import (
     Base,
     engine,
     ensure_match_external_columns,
-    ensure_prediction_beers_column,
+    ensure_default_competition,
+    ensure_competition_participants,
+    ensure_match_competition_column,
     ensure_prediction_unique_user_match_index,
 )
 from .routes import users, predictions
 from app.routes import matches
 from app.routes import admin
 from app.routes import champion
+from app.routes import competitions
 
 Base.metadata.create_all(bind=engine)
+ensure_default_competition()
+ensure_match_competition_column()
+ensure_competition_participants()
 ensure_match_external_columns()
-ensure_prediction_beers_column()
 ensure_prediction_unique_user_match_index()
 print("Database connected and tables ready")
 
@@ -53,6 +58,7 @@ app.include_router(predictions.router)
 app.include_router(matches.router)
 app.include_router(admin.router)
 app.include_router(champion.router)
+app.include_router(competitions.router)
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 def health():

@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from sqlalchemy import case, func
+from sqlalchemy import case, func, true
 from pydantic import BaseModel, Field
 from datetime import datetime, timezone
 
 from ..database import get_db
-from ..models import Prediction, Match, User
+from ..models import CompetitionParticipant, Prediction, Match, User
+from ..services.competitions import get_active_competition_id
 from ..services.scoring import set_final_result
 from .users import get_current_user
 
@@ -31,10 +32,6 @@ class PredictionCreate(BaseModel):
 class PredictionUpdate(BaseModel):
     home_score: int = Field(..., ge=0, le=20)
     away_score: int = Field(..., ge=0, le=20)
-
-
-class BeerUpdate(BaseModel):
-    beers_count: int = Field(..., ge=0, le=99)
 
 
 class MatchResult(BaseModel):
@@ -67,7 +64,6 @@ def prediction_payload(prediction: Prediction, match: Match) -> dict:
         "final_away_score": match.away_score,
         "prediction_home": prediction.home_score,
         "prediction_away": prediction.away_score,
-        "beers_count": prediction.beers_count,
         "points": prediction.points,
     }
 
@@ -87,6 +83,22 @@ def create_prediction(
 
     if not match:
         raise HTTPException(status_code=404, detail="Match not found")
+
+    if match.competition_id is not None:
+        participation = (
+            db.query(CompetitionParticipant)
+            .filter(
+                CompetitionParticipant.competition_id == match.competition_id,
+                CompetitionParticipant.user_id == current_user.id,
+            )
+            .first()
+        )
+
+        if not participation:
+            raise HTTPException(
+                status_code=403,
+                detail="Join this competition before predicting"
+            )
 
     now = datetime.now(timezone.utc)
     match_start = to_utc(match.start_time)
@@ -114,7 +126,6 @@ def create_prediction(
         home_score=prediction.home_score,
         away_score=prediction.away_score,
         points=0,
-        beers_count=0,
     )
 
     db.add(new_prediction)
@@ -189,13 +200,18 @@ def get_my_predictions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    active_competition_id = get_active_competition_id(db)
 
-    predictions = (
+    query = (
         db.query(Prediction)
         .join(Match)
         .filter(Prediction.user_id == current_user.id)
-        .all()
     )
+
+    if active_competition_id is not None:
+        query = query.filter(Match.competition_id == active_competition_id)
+
+    predictions = query.all()
 
     return [
         {
@@ -209,51 +225,10 @@ def get_my_predictions(
             "final_away_score": p.match.away_score,
             "prediction_home": p.home_score,
             "prediction_away": p.away_score,
-            "beers_count": p.beers_count,
             "points": p.points
         }
         for p in predictions
     ]
-
-
-# ==============================
-# UPDATE BEERS
-# ==============================
-
-@router.put("/predictions/{prediction_id}/beers")
-def update_prediction_beers(
-    prediction_id: int,
-    data: BeerUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    prediction = db.query(Prediction).filter(
-        Prediction.id == prediction_id
-    ).first()
-
-    if not prediction:
-        raise HTTPException(status_code=404, detail="Prediction not found")
-
-    if prediction.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="To nie Twój typ")
-
-    match = db.query(Match).filter(
-        Match.id == prediction.match_id
-    ).first()
-
-    prediction.beers_count = data.beers_count
-
-    db.commit()
-    db.refresh(prediction)
-
-    logger.info(
-        "Beer count updated user=%s prediction=%s beers=%s",
-        current_user.id,
-        prediction.id,
-        prediction.beers_count,
-    )
-
-    return prediction_payload(prediction, match)
 
 
 # ==============================
@@ -287,11 +262,27 @@ def finish_match(
 
 @router.get("/leaderboard")
 def leaderboard(db: Session = Depends(get_db)):
+    active_competition_id = get_active_competition_id(db)
+    competition_filter = (
+        Match.competition_id == active_competition_id
+        if active_competition_id is not None
+        else true()
+    )
+    total_points = func.coalesce(
+        func.sum(
+            case(
+                (competition_filter, Prediction.points),
+                else_=0,
+            )
+        ),
+        0,
+    )
     exact_score_count = func.coalesce(
         func.sum(
             case(
                 (
-                    (Match.is_finished.is_(True))
+                    competition_filter
+                    & (Match.is_finished.is_(True))
                     & (Prediction.home_score == Match.home_score)
                     & (Prediction.away_score == Match.away_score),
                     1,
@@ -302,22 +293,29 @@ def leaderboard(db: Session = Depends(get_db)):
         0,
     )
 
-    results = (
+    query = (
         db.query(
             User.id,
             User.username,
-            func.coalesce(func.sum(Prediction.points), 0).label("total_points"),
-            func.count(Match.id).filter(Match.is_finished.is_(True)).label("settled_predictions_count"),
+            total_points.label("total_points"),
+            func.count(Match.id).filter(
+                Match.is_finished.is_(True),
+                competition_filter,
+            ).label("settled_predictions_count"),
             exact_score_count.label("exact_score_count"),
         )
+        .join(CompetitionParticipant, CompetitionParticipant.user_id == User.id)
         .outerjoin(Prediction, Prediction.user_id == User.id)
         .outerjoin(Match, Match.id == Prediction.match_id)
+    )
+
+    if active_competition_id is not None:
+        query = query.filter(CompetitionParticipant.competition_id == active_competition_id)
+
+    results = (
+        query
         .group_by(User.id)
-        .order_by(
-            func.sum(Prediction.points).desc(),
-            exact_score_count.desc(),
-            User.username.asc(),
-        )
+        .order_by(total_points.desc(), exact_score_count.desc(), User.username.asc())
         .all()
     )
 
@@ -345,13 +343,17 @@ def leaderboard_user_history(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
 
     now = datetime.now(timezone.utc)
-    predictions = (
+    active_competition_id = get_active_competition_id(db)
+    query = (
         db.query(Prediction)
         .join(Match)
         .filter(Prediction.user_id == user_id)
-        .order_by(Match.start_time.desc())
-        .all()
     )
+
+    if active_competition_id is not None:
+        query = query.filter(Match.competition_id == active_competition_id)
+
+    predictions = query.order_by(Match.start_time.desc()).all()
     visible_predictions = [
         prediction
         for prediction in predictions
@@ -362,7 +364,6 @@ def leaderboard_user_history(user_id: int, db: Session = Depends(get_db)):
         "user_id": user.id,
         "username": user.username,
         "points": sum(int(prediction.points or 0) for prediction in visible_predictions),
-        "beers": sum(int(prediction.beers_count or 0) for prediction in visible_predictions),
         "predictions": [
             {
                 "match_id": prediction.match.id,
@@ -374,7 +375,6 @@ def leaderboard_user_history(user_id: int, db: Session = Depends(get_db)):
                 "final_away_score": prediction.match.away_score,
                 "prediction_home": prediction.home_score,
                 "prediction_away": prediction.away_score,
-                "beers_count": prediction.beers_count,
                 "points": prediction.points if prediction.match.is_finished else None,
             }
             for prediction in visible_predictions
@@ -383,50 +383,26 @@ def leaderboard_user_history(user_id: int, db: Session = Depends(get_db)):
 
 
 # ==============================
-# BEER LEADERBOARD
-# ==============================
-
-@router.get("/beer-leaderboard")
-def beer_leaderboard(db: Session = Depends(get_db)):
-    total_beers = func.coalesce(func.sum(Prediction.beers_count), 0)
-
-    results = (
-        db.query(
-            User.id,
-            User.username,
-            total_beers.label("total_beers")
-        )
-        .outerjoin(Prediction, Prediction.user_id == User.id)
-        .group_by(User.id)
-        .order_by(total_beers.desc(), User.username.asc())
-        .all()
-    )
-
-    return [
-        {
-            "position": index + 1,
-            "user_id": r.id,
-            "username": r.username,
-            "beers": int(r.total_beers)
-        }
-        for index, r in enumerate(results)
-    ]
-
-
-# ==============================
 # SEASON STATS
 # ==============================
 
 @router.get("/season-stats")
 def season_stats(db: Session = Depends(get_db)):
-    finished_matches_count = db.query(Match).filter(Match.is_finished.is_(True)).count()
-    predictions = (
+    active_competition_id = get_active_competition_id(db)
+    finished_matches_query = db.query(Match).filter(Match.is_finished.is_(True))
+    predictions_query = (
         db.query(Prediction)
         .join(Match)
         .join(User)
         .filter(Match.is_finished.is_(True))
-        .all()
     )
+
+    if active_competition_id is not None:
+        finished_matches_query = finished_matches_query.filter(Match.competition_id == active_competition_id)
+        predictions_query = predictions_query.filter(Match.competition_id == active_competition_id)
+
+    finished_matches_count = finished_matches_query.count()
+    predictions = predictions_query.all()
 
     total_predictions = len(predictions)
     total_points = sum(int(prediction.points or 0) for prediction in predictions)
@@ -438,7 +414,6 @@ def season_stats(db: Session = Depends(get_db)):
     )
     partial_hits = sum(1 for prediction in predictions if int(prediction.points or 0) == 1)
     misses = sum(1 for prediction in predictions if int(prediction.points or 0) == 0)
-    total_beers = sum(int(prediction.beers_count or 0) for prediction in predictions)
 
     match_stats = {}
     score_counts = {}
@@ -505,7 +480,6 @@ def season_stats(db: Session = Depends(get_db)):
         "finished_matches_count": finished_matches_count,
         "total_predictions": total_predictions,
         "total_points": total_points,
-        "total_beers": total_beers,
         "exact_hits": exact_hits,
         "partial_hits": partial_hits,
         "misses": misses,

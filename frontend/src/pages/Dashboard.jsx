@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router-dom"
 import { apiRequest } from "../api"
+import toast from "react-hot-toast"
 import { getUsername } from "../auth"
 import PageLoader from "../components/PageLoader"
 import TeamName from "../components/TeamName"
@@ -35,7 +36,9 @@ function ArrowIcon() {
 
 export default function Dashboard() {
   const [data, setData] = useState({ matches: [], predictions: [], ranking: [] })
+  const [participation, setParticipation] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [joining, setJoining] = useState(false)
   const [failed, setFailed] = useState(false)
   const username = getUsername()
 
@@ -44,13 +47,15 @@ export default function Dashboard() {
       apiRequest("/matches"),
       apiRequest("/my-predictions"),
       apiRequest("/leaderboard"),
+      apiRequest("/competition-participation/active"),
     ])
-      .then(([matches, predictions, ranking]) => {
+      .then(([matches, predictions, ranking, participationData]) => {
         setData({
           matches: Array.isArray(matches) ? matches : [],
           predictions: Array.isArray(predictions) ? predictions : [],
           ranking: Array.isArray(ranking) ? ranking : [],
         })
+        setParticipation(participationData)
       })
       .catch(() => setFailed(true))
       .finally(() => setLoading(false))
@@ -94,6 +99,57 @@ export default function Dashboard() {
 
   const primaryMatch = summary.nextMissing || summary.nextMatch
   const primaryAction = summary.nextMissing ? "Obstaw teraz" : "Zobacz mecz"
+  const activeCompetition = participation?.competition
+
+  const joinActiveCompetition = async () => {
+    if (!activeCompetition) return
+
+    setJoining(true)
+
+    try {
+      const data = await apiRequest(`/competitions/${activeCompetition.id}/join`, {
+        method: "POST",
+      })
+
+      if (!data) return
+
+      setParticipation(data)
+      toast.success("DoĹ‚Ä…czono do turnieju")
+    } catch {
+      toast.error("Nie udaĹ‚o siÄ™ doĹ‚Ä…czyÄ‡ do turnieju")
+    } finally {
+      setJoining(false)
+    }
+  }
+
+  if (activeCompetition && participation?.is_participant === false) {
+    return (
+      <div className="min-h-screen px-4 py-7 text-white sm:px-6 sm:py-10">
+        <div className="mx-auto w-full max-w-3xl">
+          <section className="stadium-panel rounded-3xl p-6 text-center sm:p-10">
+            <div className="mx-auto mb-5 inline-flex rounded-full border border-green-400/25 bg-green-500/15 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-green-300">
+              Aktywny turniej
+            </div>
+            <h1 className="section-title text-4xl font-black sm:text-5xl">
+              {activeCompetition.name}
+            </h1>
+            <p className="mx-auto mt-4 max-w-xl text-sm font-semibold text-gray-400 sm:text-base">
+              DoĹ‚Ä…cz do turnieju, ĹĽeby pojawiÄ‡ siÄ™ w rankingu i obstawiaÄ‡ mecze tego sezonu.
+            </p>
+
+            <button
+              type="button"
+              onClick={joinActiveCompetition}
+              disabled={joining}
+              className="mt-7 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 px-7 py-3.5 font-black uppercase text-black shadow-xl shadow-green-500/20 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {joining ? "DoĹ‚Ä…czanie..." : "DoĹ‚Ä…cz do turnieju"}
+            </button>
+          </section>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen px-4 py-7 text-white sm:px-6 sm:py-10">

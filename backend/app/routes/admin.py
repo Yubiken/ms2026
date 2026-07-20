@@ -3,11 +3,13 @@ import logging
 import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import Match, User
+from app.models import Competition, Match, User
 from app.schemas.match import MatchResultUpdate
+from app.services.competitions import get_active_competition_id
 from app.services.external_results import (
     ExternalResultsError,
     fetch_finished_results,
@@ -20,6 +22,11 @@ from app.routes.users import get_current_user
 router = APIRouter(prefix="/admin", tags=["Admin"])
 
 logger = logging.getLogger(__name__)
+
+
+class CompetitionCreate(BaseModel):
+    name: str = Field(..., min_length=2, max_length=80)
+    slug: str = Field(..., min_length=2, max_length=80)
 
 
 def get_admin_users() -> set[str]:
@@ -37,6 +44,77 @@ def get_current_admin_user(current_user: User = Depends(get_current_user)) -> Us
         raise HTTPException(status_code=403, detail="Admin access required")
 
     return current_user
+
+
+def serialize_competition(competition: Competition) -> dict:
+    return {
+        "id": competition.id,
+        "name": competition.name,
+        "slug": competition.slug,
+        "is_active": competition.is_active,
+        "created_at": competition.created_at,
+    }
+
+
+def normalize_slug(slug: str) -> str:
+    return slug.strip().lower().replace(" ", "-")
+
+
+@router.post("/competitions")
+def create_competition(
+    payload: CompetitionCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    name = payload.name.strip()
+    slug = normalize_slug(payload.slug)
+
+    if not name or not slug:
+        raise HTTPException(status_code=400, detail="Name and slug are required")
+
+    existing = (
+        db.query(Competition)
+        .filter((Competition.name == name) | (Competition.slug == slug))
+        .first()
+    )
+
+    if existing:
+        raise HTTPException(status_code=400, detail="Competition already exists")
+
+    competition = Competition(
+        name=name,
+        slug=slug,
+        is_active=False,
+    )
+
+    db.add(competition)
+    db.commit()
+    db.refresh(competition)
+
+    logger.info("Competition %s created by %s", competition.slug, current_user.username)
+
+    return serialize_competition(competition)
+
+
+@router.put("/competitions/{competition_id}/activate")
+def activate_competition(
+    competition_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    competition = db.query(Competition).filter(Competition.id == competition_id).first()
+
+    if not competition:
+        raise HTTPException(status_code=404, detail="Competition not found")
+
+    db.query(Competition).update({Competition.is_active: False})
+    competition.is_active = True
+    db.commit()
+    db.refresh(competition)
+
+    logger.info("Competition %s activated by %s", competition.slug, current_user.username)
+
+    return serialize_competition(competition)
 
 
 @router.put("/matches/{match_id}/result")
@@ -105,6 +183,8 @@ def sync_match_results(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_admin_user),
 ):
+    active_competition_id = get_active_competition_id(db)
+
     try:
         external_results = fetch_finished_results(match_date)
     except ExternalResultsError as exc:
@@ -115,14 +195,18 @@ def sync_match_results(
     unmatched = []
 
     for external_result in external_results:
-        match = (
+        query = (
             db.query(Match)
             .filter(
                 Match.external_source == "api-football",
                 Match.external_id == external_result.external_id,
             )
-            .first()
         )
+
+        if active_competition_id is not None:
+            query = query.filter(Match.competition_id == active_competition_id)
+
+        match = query.first()
 
         if not match:
             unmatched.append(external_result.external_id)

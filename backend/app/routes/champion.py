@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import ChampionPick, Match, User
+from ..services.competitions import get_active_competition_id
 from .users import get_current_user
 
 router = APIRouter(tags=["Champion"])
@@ -29,12 +30,18 @@ def normalize_team_name(team_name: str) -> str:
 
 
 def team_exists(db: Session, team_name: str) -> bool:
-    return db.query(Match).filter(
+    active_competition_id = get_active_competition_id(db)
+    query = db.query(Match).filter(
         or_(
             Match.home_team == team_name,
             Match.away_team == team_name,
         )
-    ).first() is not None
+    )
+
+    if active_competition_id is not None:
+        query = query.filter(Match.competition_id == active_competition_id)
+
+    return query.first() is not None
 
 
 @router.get("/champion-pick")

@@ -35,6 +35,12 @@ export default function App() {
         apiRequest("/matches"),
         apiRequest("/my-predictions"),
       ])
+      const participationData = await apiRequest("/competition-participation/active")
+
+      if (participationData && participationData.is_participant === false) {
+        setPendingPredictionsCount(0)
+        return
+      }
 
       if (!Array.isArray(matchesData) || !Array.isArray(predictionsData)) {
         setPendingPredictionsCount(0)

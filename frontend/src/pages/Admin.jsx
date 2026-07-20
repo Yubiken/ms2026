@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import toast from "react-hot-toast"
 import { apiRequest } from "../api"
 import EmptyState from "../components/EmptyState"
@@ -26,6 +26,11 @@ const initialMatchForm = {
   group_name: "",
 }
 
+const initialCompetitionForm = {
+  name: "",
+  slug: "",
+}
+
 export default function Admin() {
 
   const [matches, setMatches] = useState([])
@@ -36,12 +41,20 @@ export default function Admin() {
   const [clearingMatchId, setClearingMatchId] = useState(null)
   const [matchForm, setMatchForm] = useState(initialMatchForm)
   const [creatingMatch, setCreatingMatch] = useState(false)
+  const [competitions, setCompetitions] = useState([])
+  const [competitionForm, setCompetitionForm] = useState(initialCompetitionForm)
+  const [creatingCompetition, setCreatingCompetition] = useState(false)
+  const [activatingCompetitionId, setActivatingCompetitionId] = useState(null)
 
-  useEffect(() => {
-    fetchMatches()
+  const fetchCompetitions = useCallback(async () => {
+    const data = await apiRequest("/competitions")
+
+    if (!data) return []
+
+    return Array.isArray(data) ? data : []
   }, [])
 
-  const fetchMatches = async () => {
+  const fetchMatches = useCallback(async () => {
     try {
       const data = await apiRequest("/matches")
 
@@ -53,7 +66,30 @@ export default function Admin() {
     }
 
     setLoading(false)
-  }
+  }, [])
+
+  const fetchAdminData = useCallback(async () => {
+    try {
+      const [matchesData, competitionsData] = await Promise.all([
+        apiRequest("/matches"),
+        fetchCompetitions(),
+      ])
+
+      if (matchesData) {
+        setMatches(Array.isArray(matchesData) ? matchesData : [])
+      }
+
+      setCompetitions(competitionsData)
+    } catch {
+      toast.error("Nie udaĹ‚o siÄ™ pobraÄ‡ danych admina")
+    }
+
+    setLoading(false)
+  }, [fetchCompetitions])
+
+  useEffect(() => {
+    fetchAdminData()
+  }, [fetchAdminData])
 
   const updateScore = (matchId, side, value) => {
     setScores(current => ({
@@ -78,6 +114,78 @@ export default function Admin() {
       [field]: value,
       ...(field === "stage" && value !== "group" ? { group_name: "" } : {}),
     }))
+  }
+
+  const updateCompetitionForm = (field, value) => {
+    setCompetitionForm(current => ({
+      ...current,
+      [field]: value,
+      ...(field === "name" && !current.slug
+        ? {
+            slug: value
+              .trim()
+              .toLowerCase()
+              .replace(/\s+/g, "-")
+              .replace(/[^a-z0-9-]/g, ""),
+          }
+        : {}),
+    }))
+  }
+
+  const createCompetition = async (event) => {
+    event.preventDefault()
+
+    const name = competitionForm.name.trim()
+    const slug = competitionForm.slug.trim().toLowerCase()
+
+    if (!name || !slug) {
+      toast.error("UzupeĹ‚nij nazwÄ™ i slug turnieju")
+      return
+    }
+
+    setCreatingCompetition(true)
+
+    try {
+      const data = await apiRequest("/admin/competitions", {
+        method: "POST",
+        body: JSON.stringify({ name, slug }),
+      })
+
+      if (!data) return
+
+      toast.success("Turniej dodany")
+      setCompetitionForm(initialCompetitionForm)
+      setCompetitions(await fetchCompetitions())
+    } catch {
+      toast.error("Nie udaĹ‚o siÄ™ dodaÄ‡ turnieju")
+    } finally {
+      setCreatingCompetition(false)
+    }
+  }
+
+  const activateCompetition = async (competition) => {
+    if (competition.is_active) return
+
+    const confirmed = window.confirm(`UstawiÄ‡ turniej "${competition.name}" jako aktywny? Widok meczĂłw i ranking przeĹ‚Ä…czÄ… siÄ™ na ten turniej.`)
+
+    if (!confirmed) return
+
+    setActivatingCompetitionId(competition.id)
+
+    try {
+      const data = await apiRequest(`/admin/competitions/${competition.id}/activate`, {
+        method: "PUT",
+      })
+
+      if (!data) return
+
+      toast.success("Aktywny turniej zmieniony")
+      await fetchAdminData()
+    } catch {
+      toast.error("Nie udaĹ‚o siÄ™ aktywowaÄ‡ turnieju")
+    } finally {
+      setActivatingCompetitionId(null)
+    }
   }
 
   const hasCompleteScore = (match) => {
@@ -255,6 +363,104 @@ export default function Admin() {
             <div className="mt-1 text-2xl font-black text-yellow-300">{finishedCount}</div>
           </div>
         </div>
+
+        <details className="stadium-panel mb-6 rounded-2xl p-4 sm:p-5" open>
+          <summary className="cursor-pointer list-none">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div className="text-sm font-black uppercase tracking-wide text-white">
+                  Turnieje
+                </div>
+                <div className="mt-1 text-xs font-semibold text-gray-400">
+                  Dodaj sezon i ustaw, ktĂłry turniej jest aktywny w aplikacji.
+                </div>
+              </div>
+              <div className="text-xs font-bold uppercase tracking-wide text-green-300">
+                {competitions.find(competition => competition.is_active)?.name || "Brak aktywnego"}
+              </div>
+            </div>
+          </summary>
+
+          <div className="mt-5 border-t border-white/10 pt-5">
+            <form onSubmit={createCompetition} className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Nazwa turnieju
+                <input
+                  type="text"
+                  value={competitionForm.name}
+                  onChange={(event) => updateCompetitionForm("name", event.target.value)}
+                  placeholder="np. Euro 2028"
+                  disabled={creatingCompetition}
+                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Slug
+                <input
+                  type="text"
+                  value={competitionForm.slug}
+                  onChange={(event) => updateCompetitionForm("slug", event.target.value)}
+                  placeholder="np. euro-2028"
+                  disabled={creatingCompetition}
+                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+
+              <button
+                type="submit"
+                disabled={creatingCompetition}
+                className="rounded-full bg-gradient-to-r from-green-600 to-emerald-500 px-5 py-3 text-sm font-bold uppercase text-white shadow-lg transition hover:from-green-700 hover:to-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {creatingCompetition ? "Dodawanie..." : "Dodaj"}
+              </button>
+            </form>
+
+            <div className="mt-5 grid gap-3">
+              {competitions.length === 0 ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm font-semibold text-gray-400">
+                  Brak turniejĂłw.
+                </div>
+              ) : (
+                competitions.map(competition => {
+                  const activating = activatingCompetitionId === competition.id
+
+                  return (
+                    <div
+                      key={competition.id}
+                      className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="truncate text-lg font-black text-white">
+                            {competition.name}
+                          </div>
+                          {competition.is_active && (
+                            <span className="rounded-full border border-green-400/25 bg-green-500/15 px-2.5 py-1 text-xs font-bold uppercase text-green-300">
+                              Aktywny
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1 text-xs font-semibold text-gray-500">
+                          {competition.slug}
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => activateCompetition(competition)}
+                        disabled={competition.is_active || activating}
+                        className="rounded-full border border-white/15 bg-white/10 px-5 py-2.5 text-sm font-bold uppercase text-gray-100 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {competition.is_active ? "Aktywny" : activating ? "Aktywowanie..." : "Ustaw aktywny"}
+                      </button>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </div>
+        </details>
 
         <details className="stadium-panel mb-6 rounded-2xl p-4 sm:p-5">
           <summary className="cursor-pointer list-none">
