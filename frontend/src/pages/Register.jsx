@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
+import { APP_NAME } from "../constants"
 import toast from "react-hot-toast"
 
 export default function Register() {
@@ -83,7 +84,7 @@ export default function Register() {
           </div>
 
           <div className="text-xl text-yellow-400 tracking-widest mt-2">
-            NAŁĘCZÓW CUP
+            {APP_NAME}
           </div>
 
           <div className="h-1 w-24 mx-auto mt-3 bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full animate-pulse" />

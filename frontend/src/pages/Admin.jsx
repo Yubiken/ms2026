@@ -61,7 +61,7 @@ function RefreshIcon() {
   )
 }
 
-export default function Admin() {
+export default function Admin({ onTournamentChange = null }) {
 
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
@@ -207,6 +207,7 @@ export default function Admin() {
 
         toast.success("Turniej dodany i ustawiony jako aktywny")
         await fetchAdminData()
+        await onTournamentChange?.()
         return
       }
 
@@ -237,6 +238,7 @@ export default function Admin() {
 
       toast.success("Aktywny turniej zmieniony")
       await fetchAdminData()
+      await onTournamentChange?.()
     } catch {
       toast.error("Nie udaĹ‚o siÄ™ aktywowaÄ‡ turnieju")
     } finally {

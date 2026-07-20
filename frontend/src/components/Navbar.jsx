@@ -2,6 +2,7 @@ import { Link, NavLink, useNavigate } from "react-router-dom"
 import { jwtDecode } from "jwt-decode"
 import { useState } from "react"
 import { isAdminToken } from "../admin"
+import { APP_NAME } from "../constants"
 
 function NavIcon({ type }) {
   const sharedProps = {
@@ -81,11 +82,17 @@ function NavIcon({ type }) {
   )
 }
 
-export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 }) {
+export default function Navbar({
+  token,
+  onLogout,
+  pendingPredictionsCount = 0,
+  currentTournament = null,
+}) {
 
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const isAdmin = isAdminToken(token)
+  const appTitle = currentTournament?.name || APP_NAME
 
   let username = null
 
@@ -130,7 +137,7 @@ export default function Navbar({ token, onLogout, pendingPredictionsCount = 0 })
               className="min-w-0 text-lg font-black tracking-wide sm:text-2xl"
             >
               <span className="block truncate bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 bg-clip-text text-transparent">
-                Mistrzostwa Świata 2026
+                {appTitle}
               </span>
             </Link>
 

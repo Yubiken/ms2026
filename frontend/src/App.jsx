@@ -11,6 +11,7 @@ import Admin from "./pages/Admin"
 import Profile from "./pages/Profile"
 import { isAdminToken } from "./admin"
 import { apiRequest } from "./api"
+import { useActiveTournament } from "./hooks/useActiveTournament"
 
 import Navbar from "./components/Navbar"
 import PageLoader from "./components/PageLoader"
@@ -19,38 +20,30 @@ export default function App() {
 
   const [token, setToken] = useState(localStorage.getItem("token"))
   const [pendingPredictionsCount, setPendingPredictionsCount] = useState(0)
-  const [activeParticipation, setActiveParticipation] = useState(null)
-  const [participationLoading, setParticipationLoading] = useState(false)
   const isAdmin = isAdminToken(token)
+  const {
+    activeParticipation,
+    currentTournament,
+    loading: tournamentLoading,
+    refreshActiveTournament,
+    resetActiveTournament,
+    setActiveParticipation,
+  } = useActiveTournament(token)
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token")
     setPendingPredictionsCount(0)
-    setActiveParticipation(null)
+    resetActiveTournament()
     setToken(null)
-  }, [])
-
-  const refreshActiveParticipation = useCallback(async () => {
-    if (!token || isAdmin) {
-      setActiveParticipation(null)
-      setParticipationLoading(false)
-      return
-    }
-
-    setParticipationLoading(true)
-
-    try {
-      const data = await apiRequest("/competition-participation/active")
-      setActiveParticipation(data)
-    } catch {
-      setActiveParticipation(null)
-    } finally {
-      setParticipationLoading(false)
-    }
-  }, [isAdmin, token])
+  }, [resetActiveTournament])
 
   const refreshPendingPredictionsCount = useCallback(async () => {
     if (!token) {
+      setPendingPredictionsCount(0)
+      return
+    }
+
+    if (!isAdmin && (tournamentLoading || activeParticipation?.is_participant === false)) {
       setPendingPredictionsCount(0)
       return
     }
@@ -60,12 +53,6 @@ export default function App() {
         apiRequest("/matches"),
         apiRequest("/my-predictions"),
       ])
-      const participationData = await apiRequest("/competition-participation/active")
-
-      if (participationData && participationData.is_participant === false) {
-        setPendingPredictionsCount(0)
-        return
-      }
 
       if (!Array.isArray(matchesData) || !Array.isArray(predictionsData)) {
         setPendingPredictionsCount(0)
@@ -86,7 +73,7 @@ export default function App() {
     } catch {
       setPendingPredictionsCount(0)
     }
-  }, [token])
+  }, [activeParticipation?.is_participant, isAdmin, token, tournamentLoading])
 
   const handlePredictionsChange = useCallback((pendingDelta = 0) => {
     if (pendingDelta !== 0) {
@@ -121,10 +108,6 @@ export default function App() {
     return () => window.clearTimeout(timeoutId)
   }, [refreshPendingPredictionsCount])
 
-  useEffect(() => {
-    refreshActiveParticipation()
-  }, [refreshActiveParticipation])
-
   const requiresLeagueCode = Boolean(
     token
     && !isAdmin
@@ -135,7 +118,7 @@ export default function App() {
   const renderProtectedRoute = (element) => {
     if (!token) return <Navigate to="/login" />
 
-    if (!isAdmin && participationLoading) {
+    if (!isAdmin && tournamentLoading) {
       return <PageLoader title="Liga" subtitle="Sprawdzam dostÄ™p do turnieju" cards={2} />
     }
 
@@ -158,6 +141,7 @@ export default function App() {
         token={token}
         onLogout={handleLogout}
         pendingPredictionsCount={pendingPredictionsCount}
+        currentTournament={currentTournament}
       />
 
       <main className={token ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0" : ""}>
@@ -183,7 +167,14 @@ export default function App() {
           path="/dashboard"
           element={
             token
-              ? <Dashboard isAdmin={isAdmin} onCompetitionJoined={handleCompetitionJoined} />
+              ? (
+                  <Dashboard
+                    activeParticipation={activeParticipation}
+                    isAdmin={isAdmin}
+                    participationLoading={tournamentLoading}
+                    onCompetitionJoined={handleCompetitionJoined}
+                  />
+                )
               : <Navigate to="/login" />
           }
         />
@@ -210,7 +201,7 @@ export default function App() {
 
         <Route
           path="/admin"
-          element={token && isAdmin ? <Admin /> : <Navigate to={token ? "/dashboard" : "/login"} />}
+          element={token && isAdmin ? <Admin onTournamentChange={refreshActiveTournament} /> : <Navigate to={token ? "/dashboard" : "/login"} />}
         />
 
         {/* DEFAULT */}

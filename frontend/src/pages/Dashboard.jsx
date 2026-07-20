@@ -34,9 +34,13 @@ function ArrowIcon() {
   )
 }
 
-export default function Dashboard({ isAdmin = false, onCompetitionJoined = null }) {
+export default function Dashboard({
+  activeParticipation = null,
+  isAdmin = false,
+  participationLoading = false,
+  onCompetitionJoined = null,
+}) {
   const [data, setData] = useState({ matches: [], predictions: [], ranking: [] })
-  const [participation, setParticipation] = useState(null)
   const [joinCode, setJoinCode] = useState("")
   const [loading, setLoading] = useState(true)
   const [joining, setJoining] = useState(false)
@@ -48,15 +52,13 @@ export default function Dashboard({ isAdmin = false, onCompetitionJoined = null 
       apiRequest("/matches"),
       apiRequest("/my-predictions"),
       apiRequest("/leaderboard"),
-      apiRequest("/competition-participation/active"),
     ])
-      .then(([matches, predictions, ranking, participationData]) => {
+      .then(([matches, predictions, ranking]) => {
         setData({
           matches: Array.isArray(matches) ? matches : [],
           predictions: Array.isArray(predictions) ? predictions : [],
           ranking: Array.isArray(ranking) ? ranking : [],
         })
-        setParticipation(participationData)
       })
       .catch(() => setFailed(true))
       .finally(() => setLoading(false))
@@ -94,13 +96,13 @@ export default function Dashboard({ isAdmin = false, onCompetitionJoined = null 
     }
   }, [data, username])
 
-  if (loading) {
+  if (loading || (!isAdmin && participationLoading)) {
     return <PageLoader title="Twój pulpit" subtitle="Układam najważniejsze informacje" cards={4} />
   }
 
   const primaryMatch = summary.nextMissing || summary.nextMatch
   const primaryAction = summary.nextMissing ? "Obstaw teraz" : "Zobacz mecz"
-  const activeCompetition = participation?.competition
+  const activeCompetition = activeParticipation?.competition
 
   const joinActiveCompetition = async () => {
     if (!activeCompetition) return
@@ -122,7 +124,6 @@ export default function Dashboard({ isAdmin = false, onCompetitionJoined = null 
 
       if (!data) return
 
-      setParticipation(data)
       setJoinCode("")
       onCompetitionJoined?.(data)
       toast.success("Dołączono do turnieju")
@@ -133,7 +134,7 @@ export default function Dashboard({ isAdmin = false, onCompetitionJoined = null 
     }
   }
 
-  if (!isAdmin && activeCompetition && participation?.is_participant === false) {
+  if (!isAdmin && activeCompetition && activeParticipation?.is_participant === false) {
     return (
       <div className="min-h-screen px-4 py-7 text-white sm:px-6 sm:py-10">
         <div className="mx-auto w-full max-w-3xl">
