@@ -125,7 +125,7 @@ export default function Dashboard({ isAdmin = false, onCompetitionJoined = null 
       setParticipation(data)
       setJoinCode("")
       onCompetitionJoined?.(data)
-      toast.success("DoĹ‚Ä…czono do turnieju")
+      toast.success("Dołączono do turnieju")
     } catch (error) {
       toast.error(error.message || "Nie udalo sie dolaczyc do turnieju")
     } finally {
@@ -145,7 +145,7 @@ export default function Dashboard({ isAdmin = false, onCompetitionJoined = null 
               {activeCompetition.name}
             </h1>
             <p className="mx-auto mt-4 max-w-xl text-sm font-semibold text-gray-400 sm:text-base">
-              DoĹ‚Ä…cz do turnieju, ĹĽeby pojawiÄ‡ siÄ™ w rankingu i obstawiaÄ‡ mecze tego sezonu.
+              Dołącz do turnieju, żeby pojawić się w rankingu i obstawiać mecze tego sezonu.
             </p>
 
             <div className="mx-auto mt-7 grid max-w-sm gap-3 text-left">
@@ -168,7 +168,7 @@ export default function Dashboard({ isAdmin = false, onCompetitionJoined = null 
               disabled={joining}
               className="mt-5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 px-7 py-3.5 font-black uppercase text-black shadow-xl shadow-green-500/20 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {joining ? "DoĹ‚Ä…czanie..." : "DoĹ‚Ä…cz do turnieju"}
+              {joining ? "Dołączanie..." : "Dołącz do turnieju"}
             </button>
           </section>
         </div>

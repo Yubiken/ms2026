@@ -1,6 +1,8 @@
 from datetime import date
 import logging
 import os
+import re
+import unicodedata
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
@@ -26,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 class CompetitionCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=80)
-    slug: str = Field(..., min_length=2, max_length=80)
+    slug: str | None = Field(default=None, max_length=80)
     join_code: str = Field(..., min_length=3, max_length=32)
 
 
@@ -59,7 +61,25 @@ def serialize_competition(competition: Competition) -> dict:
 
 
 def normalize_slug(slug: str) -> str:
-    return slug.strip().lower().replace(" ", "-")
+    ascii_slug = (
+        unicodedata.normalize("NFKD", slug.strip().lower())
+        .encode("ascii", "ignore")
+        .decode("ascii")
+    )
+
+    return re.sub(r"-+", "-", re.sub(r"[^a-z0-9]+", "-", ascii_slug)).strip("-")
+
+
+def build_unique_slug(db: Session, slug: str | None, name: str) -> str:
+    base_slug = normalize_slug(slug or name) or "turniej"
+    candidate = base_slug[:72].strip("-") or "turniej"
+    suffix = 2
+
+    while db.query(Competition).filter(Competition.slug == candidate).first():
+        candidate = f"{base_slug[:68].strip('-')}-{suffix}"
+        suffix += 1
+
+    return candidate
 
 
 def normalize_join_code(join_code: str) -> str:
@@ -87,7 +107,7 @@ def create_competition(
     current_user: User = Depends(get_current_admin_user),
 ):
     name = payload.name.strip()
-    slug = normalize_slug(payload.slug)
+    slug = build_unique_slug(db, payload.slug, name)
     join_code = normalize_join_code(payload.join_code)
 
     if not name or not slug or not join_code:

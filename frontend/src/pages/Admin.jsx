@@ -33,6 +33,34 @@ const initialCompetitionForm = {
   activateAfterCreate: true,
 }
 
+const createSlug = (value) => value
+  .trim()
+  .toLowerCase()
+  .replace(/\s+/g, "-")
+  .replace(/[^a-z0-9-]/g, "")
+
+const createJoinCode = (value = "") => {
+  const prefix = value
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 6) || "LIGA"
+  const randomPart = Math.random().toString(36).slice(2, 6).toUpperCase()
+
+  return `${prefix}-${randomPart}`
+}
+
+function RefreshIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M21 12a9 9 0 0 1-15.5 6.2" />
+      <path d="M3 12A9 9 0 0 1 18.5 5.8" />
+      <path d="M18 3v4h-4" />
+      <path d="M6 21v-4h4" />
+    </svg>
+  )
+}
+
 export default function Admin() {
 
   const [matches, setMatches] = useState([])
@@ -128,34 +156,33 @@ export default function Admin() {
       }
 
       if (field === "name" && !current.slug) {
-        next.slug = value
-          .trim()
-          .toLowerCase()
-          .replace(/\s+/g, "-")
-          .replace(/[^a-z0-9-]/g, "")
+        next.slug = createSlug(value)
       }
 
       if (field === "name" && !current.join_code) {
-        next.join_code = value
-          .trim()
-          .toUpperCase()
-          .replace(/[^A-Z0-9]/g, "")
-          .slice(0, 16)
+        next.join_code = createJoinCode(value)
       }
 
       return next
     })
   }
 
+  const refreshCompetitionCode = () => {
+    setCompetitionForm(current => ({
+      ...current,
+      join_code: createJoinCode(current.name),
+    }))
+  }
+
   const createCompetition = async (event) => {
     event.preventDefault()
 
     const name = competitionForm.name.trim()
-    const slug = competitionForm.slug.trim().toLowerCase()
-    const joinCode = competitionForm.join_code.trim().toUpperCase()
+    const slug = createSlug(competitionForm.slug || name)
+    const joinCode = competitionForm.join_code.trim().toUpperCase() || createJoinCode(name)
 
     if (!name || !slug || !joinCode) {
-      toast.error("Uzupelnij nazwe, slug i kod ligi")
+      toast.error("Uzupelnij nazwe turnieju i kod ligi")
       return
     }
 
@@ -411,7 +438,7 @@ export default function Admin() {
           </summary>
 
           <div className="mt-5 border-t border-white/10 pt-5">
-            <form onSubmit={createCompetition} className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
+            <form onSubmit={createCompetition} className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
               <label className="grid gap-2 text-sm font-bold text-gray-300">
                 Nazwa turnieju
                 <input
@@ -425,27 +452,27 @@ export default function Admin() {
               </label>
 
               <label className="grid gap-2 text-sm font-bold text-gray-300">
-                Slug
-                <input
-                  type="text"
-                  value={competitionForm.slug}
-                  onChange={(event) => updateCompetitionForm("slug", event.target.value)}
-                  placeholder="np. euro-2028"
-                  disabled={creatingCompetition}
-                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
-                />
-              </label>
-
-              <label className="grid gap-2 text-sm font-bold text-gray-300">
                 Kod ligi
-                <input
-                  type="text"
-                  value={competitionForm.join_code}
-                  onChange={(event) => updateCompetitionForm("join_code", event.target.value)}
-                  placeholder="np. EURO2028"
-                  disabled={creatingCompetition}
-                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={competitionForm.join_code}
+                    onChange={(event) => updateCompetitionForm("join_code", event.target.value)}
+                    placeholder="np. EURO20-K9QF"
+                    disabled={creatingCompetition}
+                    className="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/10 px-4 py-3 font-black uppercase tracking-wide text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+                  <button
+                    type="button"
+                    onClick={refreshCompetitionCode}
+                    disabled={creatingCompetition}
+                    aria-label="Wygeneruj nowy kod ligi"
+                    title="Wygeneruj nowy kod ligi"
+                    className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-white/15 bg-white/10 text-yellow-200 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <RefreshIcon />
+                  </button>
+                </div>
               </label>
 
               <button
@@ -456,7 +483,7 @@ export default function Admin() {
                 {creatingCompetition ? "Dodawanie..." : "Dodaj"}
               </button>
 
-              <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-gray-300 md:col-span-4">
+              <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-gray-300 md:col-span-3">
                 <input
                   type="checkbox"
                   checked={competitionForm.activateAfterCreate}
@@ -494,7 +521,6 @@ export default function Admin() {
                           )}
                         </div>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-gray-500">
-                          <span>{competition.slug}</span>
                           {competition.join_code && (
                             <span className="rounded-full border border-yellow-400/25 bg-yellow-400/10 px-2.5 py-1 font-black uppercase tracking-wide text-yellow-200">
                               Kod ligi: {competition.join_code}
