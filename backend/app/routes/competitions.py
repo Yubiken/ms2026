@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -8,6 +9,14 @@ from ..services.competitions import get_active_competition
 from .users import get_current_user
 
 router = APIRouter(tags=["Competitions"])
+
+
+class CompetitionJoin(BaseModel):
+    join_code: str = Field(..., min_length=3, max_length=32)
+
+
+def normalize_join_code(join_code: str) -> str:
+    return "".join(character for character in join_code.strip().upper() if character.isalnum() or character in "-_")
 
 
 def serialize_competition(competition: Competition) -> dict:
@@ -75,6 +84,7 @@ def get_active_competition_participation(
 @router.post("/competitions/{competition_id}/join")
 def join_competition(
     competition_id: int,
+    payload: CompetitionJoin,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -82,6 +92,9 @@ def join_competition(
 
     if not competition:
         raise HTTPException(status_code=404, detail="Competition not found")
+
+    if normalize_join_code(payload.join_code) != competition.join_code:
+        raise HTTPException(status_code=400, detail="Nieprawidlowy kod ligi")
 
     existing = get_participation(db, competition.id, current_user.id)
 

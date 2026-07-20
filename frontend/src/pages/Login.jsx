@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { saveToken } from "../auth"
 import toast from "react-hot-toast"
 
@@ -218,6 +218,15 @@ export default function Login({ onLogin }) {
         >
           {showPasswordReset ? "Wróć do logowania" : "Nie pamiętasz hasła?"}
         </button>
+
+        {!showPasswordReset && (
+          <div className="mt-5 text-sm font-semibold text-gray-400">
+            Nie masz konta?
+            <Link to="/register" className="ml-2 font-bold text-yellow-300 transition hover:text-yellow-200">
+              Zarejestruj sie
+            </Link>
+          </div>
+        )}
 
       </form>
     </div>

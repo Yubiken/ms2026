@@ -14,6 +14,7 @@ class Competition(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, nullable=False)
     slug = Column(String, unique=True, index=True, nullable=False)
+    join_code = Column(String, unique=True, index=True, nullable=True)
     is_active = Column(Boolean, default=False, nullable=False)
 
     created_at = Column(

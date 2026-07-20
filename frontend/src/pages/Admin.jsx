@@ -29,6 +29,8 @@ const initialMatchForm = {
 const initialCompetitionForm = {
   name: "",
   slug: "",
+  join_code: "",
+  activateAfterCreate: true,
 }
 
 export default function Admin() {
@@ -47,7 +49,7 @@ export default function Admin() {
   const [activatingCompetitionId, setActivatingCompetitionId] = useState(null)
 
   const fetchCompetitions = useCallback(async () => {
-    const data = await apiRequest("/competitions")
+    const data = await apiRequest("/admin/competitions")
 
     if (!data) return []
 
@@ -117,19 +119,32 @@ export default function Admin() {
   }
 
   const updateCompetitionForm = (field, value) => {
-    setCompetitionForm(current => ({
-      ...current,
-      [field]: value,
-      ...(field === "name" && !current.slug
-        ? {
-            slug: value
-              .trim()
-              .toLowerCase()
-              .replace(/\s+/g, "-")
-              .replace(/[^a-z0-9-]/g, ""),
-          }
-        : {}),
-    }))
+    setCompetitionForm(current => {
+      const next = {
+        ...current,
+        [field]: field === "join_code"
+          ? value.toUpperCase().replace(/[^A-Z0-9-_]/g, "").slice(0, 32)
+          : value,
+      }
+
+      if (field === "name" && !current.slug) {
+        next.slug = value
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "-")
+          .replace(/[^a-z0-9-]/g, "")
+      }
+
+      if (field === "name" && !current.join_code) {
+        next.join_code = value
+          .trim()
+          .toUpperCase()
+          .replace(/[^A-Z0-9]/g, "")
+          .slice(0, 16)
+      }
+
+      return next
+    })
   }
 
   const createCompetition = async (event) => {
@@ -137,9 +152,10 @@ export default function Admin() {
 
     const name = competitionForm.name.trim()
     const slug = competitionForm.slug.trim().toLowerCase()
+    const joinCode = competitionForm.join_code.trim().toUpperCase()
 
-    if (!name || !slug) {
-      toast.error("UzupeĹ‚nij nazwÄ™ i slug turnieju")
+    if (!name || !slug || !joinCode) {
+      toast.error("Uzupelnij nazwe, slug i kod ligi")
       return
     }
 
@@ -148,13 +164,26 @@ export default function Admin() {
     try {
       const data = await apiRequest("/admin/competitions", {
         method: "POST",
-        body: JSON.stringify({ name, slug }),
+        body: JSON.stringify({ name, slug, join_code: joinCode }),
       })
 
       if (!data) return
 
-      toast.success("Turniej dodany")
       setCompetitionForm(initialCompetitionForm)
+
+      if (competitionForm.activateAfterCreate) {
+        const activatedCompetition = await apiRequest(`/admin/competitions/${data.id}/activate`, {
+          method: "PUT",
+        })
+
+        if (!activatedCompetition) return
+
+        toast.success("Turniej dodany i ustawiony jako aktywny")
+        await fetchAdminData()
+        return
+      }
+
+      toast.success("Turniej dodany")
       setCompetitions(await fetchCompetitions())
     } catch {
       toast.error("Nie udaĹ‚o siÄ™ dodaÄ‡ turnieju")
@@ -382,7 +411,7 @@ export default function Admin() {
           </summary>
 
           <div className="mt-5 border-t border-white/10 pt-5">
-            <form onSubmit={createCompetition} className="grid gap-3 md:grid-cols-[1fr_1fr_auto] md:items-end">
+            <form onSubmit={createCompetition} className="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end">
               <label className="grid gap-2 text-sm font-bold text-gray-300">
                 Nazwa turnieju
                 <input
@@ -407,6 +436,18 @@ export default function Admin() {
                 />
               </label>
 
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Kod ligi
+                <input
+                  type="text"
+                  value={competitionForm.join_code}
+                  onChange={(event) => updateCompetitionForm("join_code", event.target.value)}
+                  placeholder="np. EURO2028"
+                  disabled={creatingCompetition}
+                  className="rounded-xl border border-white/15 bg-white/10 px-4 py-3 text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+
               <button
                 type="submit"
                 disabled={creatingCompetition}
@@ -414,6 +455,17 @@ export default function Admin() {
               >
                 {creatingCompetition ? "Dodawanie..." : "Dodaj"}
               </button>
+
+              <label className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm font-bold text-gray-300 md:col-span-4">
+                <input
+                  type="checkbox"
+                  checked={competitionForm.activateAfterCreate}
+                  onChange={(event) => updateCompetitionForm("activateAfterCreate", event.target.checked)}
+                  disabled={creatingCompetition}
+                  className="h-4 w-4 rounded border-white/20 bg-white/10 accent-green-500"
+                />
+                Ustaw jako aktywny po dodaniu
+              </label>
             </form>
 
             <div className="mt-5 grid gap-3">
@@ -441,8 +493,13 @@ export default function Admin() {
                             </span>
                           )}
                         </div>
-                        <div className="mt-1 text-xs font-semibold text-gray-500">
-                          {competition.slug}
+                        <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-gray-500">
+                          <span>{competition.slug}</span>
+                          {competition.join_code && (
+                            <span className="rounded-full border border-yellow-400/25 bg-yellow-400/10 px-2.5 py-1 font-black uppercase tracking-wide text-yellow-200">
+                              Kod ligi: {competition.join_code}
+                            </span>
+                          )}
                         </div>
                       </div>
 

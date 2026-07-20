@@ -80,12 +80,13 @@ def ensure_default_competition():
         else:
             connection.execute(
                 text(
-                    "INSERT INTO competitions (name, slug, is_active) "
-                    "VALUES (:name, :slug, :is_active)"
+                    "INSERT INTO competitions (name, slug, join_code, is_active) "
+                    "VALUES (:name, :slug, :join_code, :is_active)"
                 ),
                 {
                     "name": "MŚ 2026",
                     "slug": "ms-2026",
+                    "join_code": "MS2026",
                     "is_active": True,
                 },
             )
@@ -97,6 +98,64 @@ def ensure_default_competition():
         connection.execute(
             text("UPDATE competitions SET is_active = CASE WHEN id = :id THEN TRUE ELSE FALSE END"),
             {"id": default_competition_id},
+        )
+
+
+def ensure_competition_join_code_column():
+    inspector = inspect(engine)
+
+    if not inspector.has_table("competitions"):
+        return
+
+    existing_columns = {column["name"] for column in inspector.get_columns("competitions")}
+
+    with engine.begin() as connection:
+        if "join_code" not in existing_columns:
+            connection.execute(text("ALTER TABLE competitions ADD COLUMN join_code VARCHAR"))
+
+        connection.execute(
+            text(
+                "UPDATE competitions SET join_code = :join_code "
+                "WHERE slug = :slug AND (join_code IS NULL OR join_code = '')"
+            ),
+            {
+                "slug": "ms-2026",
+                "join_code": "MS2026",
+            },
+        )
+
+        existing_codes = {
+            row[0]
+            for row in connection.execute(
+                text("SELECT join_code FROM competitions WHERE join_code IS NOT NULL AND join_code != ''")
+            ).fetchall()
+        }
+        competitions_without_codes = connection.execute(
+            text("SELECT id, slug FROM competitions WHERE join_code IS NULL OR join_code = ''")
+        ).fetchall()
+
+        for competition_id, slug in competitions_without_codes:
+            code_base = "".join(
+                character
+                for character in slug.strip().upper()
+                if character.isalnum() or character in "-_"
+            )[:24]
+            code = code_base or f"LIGA-{competition_id}"
+
+            if code in existing_codes:
+                code = f"{code[:24]}-{competition_id}"
+
+            existing_codes.add(code)
+            connection.execute(
+                text("UPDATE competitions SET join_code = :join_code WHERE id = :id"),
+                {
+                    "id": competition_id,
+                    "join_code": code,
+                },
+            )
+
+        connection.execute(
+            text("CREATE UNIQUE INDEX IF NOT EXISTS ix_competitions_join_code ON competitions (join_code)")
         )
 
 

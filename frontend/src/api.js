@@ -76,5 +76,11 @@ export async function apiRequest(endpoint, options = {}) {
     return null
   }
 
-  return response.json()
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.detail || "Request failed")
+  }
+
+  return data
 }

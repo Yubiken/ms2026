@@ -5,6 +5,7 @@ from .database import (
     engine,
     ensure_match_external_columns,
     ensure_default_competition,
+    ensure_competition_join_code_column,
     ensure_competition_participants,
     ensure_match_competition_column,
     ensure_prediction_unique_user_match_index,
@@ -16,7 +17,9 @@ from app.routes import champion
 from app.routes import competitions
 
 Base.metadata.create_all(bind=engine)
+ensure_competition_join_code_column()
 ensure_default_competition()
+ensure_competition_join_code_column()
 ensure_match_competition_column()
 ensure_competition_participants()
 ensure_match_external_columns()

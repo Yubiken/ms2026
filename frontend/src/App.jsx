@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom"
 import { useState, useEffect, useCallback } from "react"
 
 import Login from "./pages/Login"
+import Register from "./pages/Register"
 import Dashboard from "./pages/Dashboard"
 import Matches from "./pages/Matches"
 import Leaderboard from "./pages/Leaderboard"
@@ -12,17 +13,41 @@ import { isAdminToken } from "./admin"
 import { apiRequest } from "./api"
 
 import Navbar from "./components/Navbar"
+import PageLoader from "./components/PageLoader"
 
 export default function App() {
 
   const [token, setToken] = useState(localStorage.getItem("token"))
   const [pendingPredictionsCount, setPendingPredictionsCount] = useState(0)
+  const [activeParticipation, setActiveParticipation] = useState(null)
+  const [participationLoading, setParticipationLoading] = useState(false)
+  const isAdmin = isAdminToken(token)
 
   const handleLogout = useCallback(() => {
     localStorage.removeItem("token")
     setPendingPredictionsCount(0)
+    setActiveParticipation(null)
     setToken(null)
   }, [])
+
+  const refreshActiveParticipation = useCallback(async () => {
+    if (!token || isAdmin) {
+      setActiveParticipation(null)
+      setParticipationLoading(false)
+      return
+    }
+
+    setParticipationLoading(true)
+
+    try {
+      const data = await apiRequest("/competition-participation/active")
+      setActiveParticipation(data)
+    } catch {
+      setActiveParticipation(null)
+    } finally {
+      setParticipationLoading(false)
+    }
+  }, [isAdmin, token])
 
   const refreshPendingPredictionsCount = useCallback(async () => {
     if (!token) {
@@ -96,6 +121,36 @@ export default function App() {
     return () => window.clearTimeout(timeoutId)
   }, [refreshPendingPredictionsCount])
 
+  useEffect(() => {
+    refreshActiveParticipation()
+  }, [refreshActiveParticipation])
+
+  const requiresLeagueCode = Boolean(
+    token
+    && !isAdmin
+    && activeParticipation?.competition
+    && activeParticipation.is_participant === false
+  )
+
+  const renderProtectedRoute = (element) => {
+    if (!token) return <Navigate to="/login" />
+
+    if (!isAdmin && participationLoading) {
+      return <PageLoader title="Liga" subtitle="Sprawdzam dostÄ™p do turnieju" cards={2} />
+    }
+
+    if (requiresLeagueCode) {
+      return <Navigate to="/dashboard" />
+    }
+
+    return element
+  }
+
+  const handleCompetitionJoined = (participationData) => {
+    setActiveParticipation(participationData)
+    refreshPendingPredictionsCount()
+  }
+
   return (
     <div className="app-shell text-white">
 
@@ -120,38 +175,42 @@ export default function App() {
 
         <Route
           path="/register"
-          element={<Navigate to={token ? "/dashboard" : "/login"} />}
+          element={token ? <Navigate to="/dashboard" /> : <Register />}
         />
 
         {/* PROTECTED */}
         <Route
           path="/dashboard"
-          element={token ? <Dashboard /> : <Navigate to="/login" />}
+          element={
+            token
+              ? <Dashboard isAdmin={isAdmin} onCompetitionJoined={handleCompetitionJoined} />
+              : <Navigate to="/login" />
+          }
         />
 
         <Route
           path="/matches"
-          element={token ? <Matches onPredictionsChange={handlePredictionsChange} /> : <Navigate to="/login" />}
+          element={renderProtectedRoute(<Matches onPredictionsChange={handlePredictionsChange} />)}
         />
 
         <Route
           path="/leaderboard"
-          element={token ? <Leaderboard /> : <Navigate to="/login" />}
+          element={renderProtectedRoute(<Leaderboard />)}
         />
 
         <Route
           path="/champion"
-          element={token ? <Champion /> : <Navigate to="/login" />}
+          element={renderProtectedRoute(<Champion />)}
         />
 
         <Route
           path="/profile"
-          element={token ? <Profile onProfileUpdate={(newToken) => setToken(newToken)} /> : <Navigate to="/login" />}
+          element={renderProtectedRoute(<Profile onProfileUpdate={(newToken) => setToken(newToken)} />)}
         />
 
         <Route
           path="/admin"
-          element={token && isAdminToken(token) ? <Admin /> : <Navigate to={token ? "/dashboard" : "/login"} />}
+          element={token && isAdmin ? <Admin /> : <Navigate to={token ? "/dashboard" : "/login"} />}
         />
 
         {/* DEFAULT */}

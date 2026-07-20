@@ -27,6 +27,7 @@ logger = logging.getLogger(__name__)
 class CompetitionCreate(BaseModel):
     name: str = Field(..., min_length=2, max_length=80)
     slug: str = Field(..., min_length=2, max_length=80)
+    join_code: str = Field(..., min_length=3, max_length=32)
 
 
 def get_admin_users() -> set[str]:
@@ -51,6 +52,7 @@ def serialize_competition(competition: Competition) -> dict:
         "id": competition.id,
         "name": competition.name,
         "slug": competition.slug,
+        "join_code": competition.join_code,
         "is_active": competition.is_active,
         "created_at": competition.created_at,
     }
@@ -58,6 +60,24 @@ def serialize_competition(competition: Competition) -> dict:
 
 def normalize_slug(slug: str) -> str:
     return slug.strip().lower().replace(" ", "-")
+
+
+def normalize_join_code(join_code: str) -> str:
+    return "".join(character for character in join_code.strip().upper() if character.isalnum() or character in "-_")
+
+
+@router.get("/competitions")
+def get_admin_competitions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_admin_user),
+):
+    competitions = (
+        db.query(Competition)
+        .order_by(Competition.created_at.desc(), Competition.id.desc())
+        .all()
+    )
+
+    return [serialize_competition(competition) for competition in competitions]
 
 
 @router.post("/competitions")
@@ -68,13 +88,18 @@ def create_competition(
 ):
     name = payload.name.strip()
     slug = normalize_slug(payload.slug)
+    join_code = normalize_join_code(payload.join_code)
 
-    if not name or not slug:
-        raise HTTPException(status_code=400, detail="Name and slug are required")
+    if not name or not slug or not join_code:
+        raise HTTPException(status_code=400, detail="Name, slug and join code are required")
 
     existing = (
         db.query(Competition)
-        .filter((Competition.name == name) | (Competition.slug == slug))
+        .filter(
+            (Competition.name == name)
+            | (Competition.slug == slug)
+            | (Competition.join_code == join_code)
+        )
         .first()
     )
 
@@ -84,6 +109,7 @@ def create_competition(
     competition = Competition(
         name=name,
         slug=slug,
+        join_code=join_code,
         is_active=False,
     )
 

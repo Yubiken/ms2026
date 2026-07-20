@@ -34,9 +34,10 @@ function ArrowIcon() {
   )
 }
 
-export default function Dashboard() {
+export default function Dashboard({ isAdmin = false, onCompetitionJoined = null }) {
   const [data, setData] = useState({ matches: [], predictions: [], ranking: [] })
   const [participation, setParticipation] = useState(null)
+  const [joinCode, setJoinCode] = useState("")
   const [loading, setLoading] = useState(true)
   const [joining, setJoining] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -104,25 +105,35 @@ export default function Dashboard() {
   const joinActiveCompetition = async () => {
     if (!activeCompetition) return
 
+    const normalizedJoinCode = joinCode.trim().toUpperCase()
+
+    if (!normalizedJoinCode) {
+      toast.error("Wpisz kod ligi")
+      return
+    }
+
     setJoining(true)
 
     try {
       const data = await apiRequest(`/competitions/${activeCompetition.id}/join`, {
         method: "POST",
+        body: JSON.stringify({ join_code: normalizedJoinCode }),
       })
 
       if (!data) return
 
       setParticipation(data)
+      setJoinCode("")
+      onCompetitionJoined?.(data)
       toast.success("DoĹ‚Ä…czono do turnieju")
-    } catch {
-      toast.error("Nie udaĹ‚o siÄ™ doĹ‚Ä…czyÄ‡ do turnieju")
+    } catch (error) {
+      toast.error(error.message || "Nie udalo sie dolaczyc do turnieju")
     } finally {
       setJoining(false)
     }
   }
 
-  if (activeCompetition && participation?.is_participant === false) {
+  if (!isAdmin && activeCompetition && participation?.is_participant === false) {
     return (
       <div className="min-h-screen px-4 py-7 text-white sm:px-6 sm:py-10">
         <div className="mx-auto w-full max-w-3xl">
@@ -137,11 +148,25 @@ export default function Dashboard() {
               DoĹ‚Ä…cz do turnieju, ĹĽeby pojawiÄ‡ siÄ™ w rankingu i obstawiaÄ‡ mecze tego sezonu.
             </p>
 
+            <div className="mx-auto mt-7 grid max-w-sm gap-3 text-left">
+              <label className="grid gap-2 text-sm font-bold text-gray-300">
+                Kod ligi
+                <input
+                  type="text"
+                  value={joinCode}
+                  onChange={(event) => setJoinCode(event.target.value.toUpperCase().replace(/[^A-Z0-9-_]/g, "").slice(0, 32))}
+                  placeholder="np. MS2026"
+                  disabled={joining}
+                  className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-center text-lg font-black uppercase tracking-[0.12em] text-white outline-none transition placeholder:text-gray-500 focus:border-green-400 focus:ring-2 focus:ring-green-500/25 disabled:cursor-not-allowed disabled:opacity-60"
+                />
+              </label>
+            </div>
+
             <button
               type="button"
               onClick={joinActiveCompetition}
               disabled={joining}
-              className="mt-7 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 px-7 py-3.5 font-black uppercase text-black shadow-xl shadow-green-500/20 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
+              className="mt-5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 px-7 py-3.5 font-black uppercase text-black shadow-xl shadow-green-500/20 transition hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {joining ? "DoĹ‚Ä…czanie..." : "DoĹ‚Ä…cz do turnieju"}
             </button>
