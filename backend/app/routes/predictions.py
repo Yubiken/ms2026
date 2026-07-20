@@ -414,6 +414,134 @@ def beer_leaderboard(db: Session = Depends(get_db)):
 
 
 # ==============================
+# SEASON STATS
+# ==============================
+
+@router.get("/season-stats")
+def season_stats(db: Session = Depends(get_db)):
+    finished_matches_count = db.query(Match).filter(Match.is_finished.is_(True)).count()
+    predictions = (
+        db.query(Prediction)
+        .join(Match)
+        .join(User)
+        .filter(Match.is_finished.is_(True))
+        .all()
+    )
+
+    total_predictions = len(predictions)
+    total_points = sum(int(prediction.points or 0) for prediction in predictions)
+    exact_hits = sum(
+        1
+        for prediction in predictions
+        if prediction.home_score == prediction.match.home_score
+        and prediction.away_score == prediction.match.away_score
+    )
+    partial_hits = sum(1 for prediction in predictions if int(prediction.points or 0) == 1)
+    misses = sum(1 for prediction in predictions if int(prediction.points or 0) == 0)
+    total_beers = sum(int(prediction.beers_count or 0) for prediction in predictions)
+
+    match_stats = {}
+    score_counts = {}
+    stage_stats = {}
+
+    for prediction in predictions:
+        match = prediction.match
+        match_key = match.id
+        score = f"{prediction.home_score}:{prediction.away_score}"
+        stage = match.stage or "group"
+
+        score_counts[score] = score_counts.get(score, 0) + 1
+
+        if match_key not in match_stats:
+            match_stats[match_key] = {
+                "match_id": match.id,
+                "home_team": match.home_team,
+                "away_team": match.away_team,
+                "final_score": f"{match.home_score}:{match.away_score}",
+                "predictions_count": 0,
+                "points": 0,
+                "exact_hits": 0,
+            }
+
+        match_stats[match_key]["predictions_count"] += 1
+        match_stats[match_key]["points"] += int(prediction.points or 0)
+
+        if prediction.home_score == match.home_score and prediction.away_score == match.away_score:
+            match_stats[match_key]["exact_hits"] += 1
+
+        if stage not in stage_stats:
+            stage_stats[stage] = {
+                "stage": stage,
+                "predictions_count": 0,
+                "points": 0,
+                "exact_hits": 0,
+            }
+
+        stage_stats[stage]["predictions_count"] += 1
+        stage_stats[stage]["points"] += int(prediction.points or 0)
+
+        if prediction.home_score == match.home_score and prediction.away_score == match.away_score:
+            stage_stats[stage]["exact_hits"] += 1
+
+    enriched_match_stats = [
+        {
+            **item,
+            "average_points": round(item["points"] / item["predictions_count"], 2)
+            if item["predictions_count"] > 0
+            else 0,
+        }
+        for item in match_stats.values()
+    ]
+    matches_with_predictions = [
+        item for item in enriched_match_stats if item["predictions_count"] > 0
+    ]
+
+    top_scores = sorted(
+        score_counts.items(),
+        key=lambda item: (-item[1], item[0]),
+    )[:5]
+
+    return {
+        "finished_matches_count": finished_matches_count,
+        "total_predictions": total_predictions,
+        "total_points": total_points,
+        "total_beers": total_beers,
+        "exact_hits": exact_hits,
+        "partial_hits": partial_hits,
+        "misses": misses,
+        "league_accuracy": round((total_points / (total_predictions * 2)) * 100)
+        if total_predictions > 0
+        else None,
+        "exact_rate": round((exact_hits / total_predictions) * 100)
+        if total_predictions > 0
+        else None,
+        "most_predictable_match": max(
+            matches_with_predictions,
+            key=lambda item: (item["average_points"], item["exact_hits"], item["predictions_count"]),
+            default=None,
+        ),
+        "hardest_match": min(
+            matches_with_predictions,
+            key=lambda item: (item["average_points"], item["exact_hits"], -item["predictions_count"]),
+            default=None,
+        ),
+        "popular_scores": [
+            {"score": score, "count": count}
+            for score, count in top_scores
+        ],
+        "stage_stats": [
+            {
+                **item,
+                "accuracy": round((item["points"] / (item["predictions_count"] * 2)) * 100)
+                if item["predictions_count"] > 0
+                else None,
+            }
+            for item in stage_stats.values()
+        ],
+    }
+
+
+# ==============================
 # VIEW ALL PREDICTIONS (AFTER START)
 # ==============================
 

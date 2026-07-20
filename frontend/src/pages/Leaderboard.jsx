@@ -10,6 +10,16 @@ const rankingModes = [
   { key: "beers", label: "Piwka", endpoint: "/beer-leaderboard", valueKey: "beers" },
 ]
 
+const stageLabels = {
+  group: "Faza grupowa",
+  round_of_32: "1/16 finału",
+  round_of_16: "1/8 finału",
+  quarter_final: "Ćwierćfinał",
+  semi_final: "Półfinał",
+  third_place: "Mecz o 3. miejsce",
+  final: "Finał",
+}
+
 const getBeerCountLabel = (count) => {
   const value = Number(count ?? 0)
 
@@ -38,6 +48,177 @@ const getExactScoreLabel = (count) => {
   return `${value} dokładnych wyników`
 }
 
+const getPercent = (value, total) => {
+  const normalizedValue = Number(value ?? 0)
+  const normalizedTotal = Number(total ?? 0)
+
+  if (normalizedTotal <= 0) return 0
+
+  return Math.round((normalizedValue / normalizedTotal) * 100)
+}
+
+const getStageLabel = (stage) => stageLabels[stage] || stage || "Inna faza"
+
+function MatchStatCard({ title, match, accentClassName }) {
+  if (!match) {
+    return (
+      <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+        <div className="text-xs font-bold uppercase tracking-wide text-gray-500">{title}</div>
+        <div className="mt-2 text-sm font-semibold text-gray-400">Brak danych</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+      <div className="text-xs font-bold uppercase tracking-wide text-gray-500">{title}</div>
+      <div className="mt-2 font-black text-white">
+        <TeamName name={match.home_team} />
+        <span className="mx-1.5 text-gray-500">vs</span>
+        <TeamName name={match.away_team} />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+        <span className={`rounded-full px-2.5 py-1 ${accentClassName}`}>
+          {match.average_points} pkt/typ
+        </span>
+        <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-200">
+          Wynik {match.final_score}
+        </span>
+        <span className="rounded-full bg-yellow-500/15 px-2.5 py-1 text-yellow-300">
+          {match.exact_hits} dokładnych
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function SeasonStats({ stats }) {
+  if (!stats || Number(stats.total_predictions ?? 0) === 0) return null
+
+  const totalPredictions = Number(stats.total_predictions ?? 0)
+  const exactPercent = getPercent(stats.exact_hits, totalPredictions)
+  const partialPercent = getPercent(stats.partial_hits, totalPredictions)
+  const missesPercent = Math.max(0, 100 - exactPercent - partialPercent)
+  const stageStats = Array.isArray(stats.stage_stats)
+    ? [...stats.stage_stats].sort((a, b) => Number(b.predictions_count ?? 0) - Number(a.predictions_count ?? 0))
+    : []
+  const maxStagePredictions = Math.max(...stageStats.map(stage => Number(stage.predictions_count ?? 0)), 1)
+
+  return (
+    <section className="mb-8 rounded-3xl border border-white/10 bg-white/[0.04] p-5 shadow-2xl shadow-black/20 sm:p-6">
+      <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <div className="text-xs font-black uppercase tracking-[0.18em] text-green-300">Podsumowanie sezonu</div>
+          <h2 className="mt-1 text-2xl font-black text-white">Statystyki ligi</h2>
+        </div>
+        <div className="text-sm font-semibold text-gray-400">
+          {stats.finished_matches_count} zakończonych meczów · {totalPredictions} typów
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-2xl border border-green-400/20 bg-green-500/10 p-4">
+          <div className="text-xs font-bold uppercase tracking-wide text-green-300">Skuteczność ligi</div>
+          <div className="mt-2 text-3xl font-black text-white">{stats.league_accuracy ?? 0}%</div>
+          <div className="mt-1 text-xs font-semibold text-gray-400">{stats.total_points} / {totalPredictions * 2} pkt</div>
+        </div>
+        <div className="rounded-2xl border border-yellow-400/20 bg-yellow-500/10 p-4">
+          <div className="text-xs font-bold uppercase tracking-wide text-yellow-300">Dokładne wyniki</div>
+          <div className="mt-2 text-3xl font-black text-white">{stats.exact_hits}</div>
+          <div className="mt-1 text-xs font-semibold text-gray-400">{stats.exact_rate ?? 0}% wszystkich typów</div>
+        </div>
+        <div className="rounded-2xl border border-orange-400/20 bg-orange-500/10 p-4">
+          <div className="text-xs font-bold uppercase tracking-wide text-orange-300">Piwka</div>
+          <div className="mt-2 text-3xl font-black text-white">{stats.total_beers}</div>
+          <div className="mt-1 text-xs font-semibold text-gray-400">łącznie przy meczach</div>
+        </div>
+        <div className="rounded-2xl border border-blue-400/20 bg-blue-500/10 p-4">
+          <div className="text-xs font-bold uppercase tracking-wide text-blue-300">Średnio</div>
+          <div className="mt-2 text-3xl font-black text-white">
+            {(Number(stats.total_points ?? 0) / totalPredictions).toFixed(2)}
+          </div>
+          <div className="mt-1 text-xs font-semibold text-gray-400">pkt na typ</div>
+        </div>
+      </div>
+
+      <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+        <div className="mb-3 flex items-center justify-between gap-3 text-xs font-bold uppercase tracking-wide text-gray-400">
+          <span>Rozkład trafień</span>
+          <span>{stats.exact_hits} / {stats.partial_hits} / {stats.misses}</span>
+        </div>
+        <div className="flex h-4 overflow-hidden rounded-full bg-white/10">
+          <div className="bg-green-400" style={{ width: `${exactPercent}%` }} />
+          <div className="bg-yellow-400" style={{ width: `${partialPercent}%` }} />
+          <div className="bg-gray-600" style={{ width: `${missesPercent}%` }} />
+        </div>
+        <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold">
+          <span className="rounded-full bg-green-500/15 px-2.5 py-1 text-green-300">{exactPercent}% dokładne</span>
+          <span className="rounded-full bg-yellow-500/15 px-2.5 py-1 text-yellow-300">{partialPercent}% za 1 pkt</span>
+          <span className="rounded-full bg-white/10 px-2.5 py-1 text-gray-300">{missesPercent}% pudła</span>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-3 lg:grid-cols-2">
+        <MatchStatCard
+          title="Najłatwiejszy mecz"
+          match={stats.most_predictable_match}
+          accentClassName="bg-green-500/15 text-green-300"
+        />
+        <MatchStatCard
+          title="Najtrudniejszy mecz"
+          match={stats.hardest_match}
+          accentClassName="bg-red-500/15 text-red-300"
+        />
+      </div>
+
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <div className="mb-4 text-xs font-bold uppercase tracking-wide text-gray-500">Najpopularniejsze typy</div>
+          <div className="space-y-3">
+            {(stats.popular_scores || []).map(score => (
+              <div key={score.score}>
+                <div className="mb-1 flex items-center justify-between text-sm font-bold">
+                  <span className="text-yellow-300">{score.score}</span>
+                  <span className="text-gray-400">{score.count} typów</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-yellow-400 to-orange-500"
+                    style={{ width: `${getPercent(score.count, totalPredictions)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+          <div className="mb-4 text-xs font-bold uppercase tracking-wide text-gray-500">Fazy turnieju</div>
+          <div className="space-y-3">
+            {stageStats.map(stage => (
+              <div key={stage.stage}>
+                <div className="mb-1 flex items-center justify-between gap-3 text-sm font-bold">
+                  <span className="truncate text-white">{getStageLabel(stage.stage)}</span>
+                  <span className="shrink-0 text-green-300">{stage.accuracy ?? 0}%</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-green-500 via-yellow-400 to-orange-500"
+                    style={{ width: `${getPercent(stage.predictions_count, maxStagePredictions)}%` }}
+                  />
+                </div>
+                <div className="mt-1 text-xs font-semibold text-gray-500">
+                  {stage.predictions_count} typów · {stage.exact_hits} dokładnych
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export default function Leaderboard() {
 
   const [rankings, setRankings] = useState({
@@ -49,14 +230,16 @@ export default function Leaderboard() {
   const [historyModal, setHistoryModal] = useState(null)
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyError, setHistoryError] = useState("")
+  const [seasonStats, setSeasonStats] = useState(null)
   const currentUser = getUsername()
 
   useEffect(() => {
     Promise.all([
       apiRequest("/leaderboard"),
       apiRequest("/beer-leaderboard"),
+      apiRequest("/season-stats"),
     ])
-      .then(([pointsData, beersData]) => {
+      .then(([pointsData, beersData, statsData]) => {
         const buildRanking = (data, valueKey) => {
           if (!Array.isArray(data)) return []
 
@@ -84,6 +267,7 @@ export default function Leaderboard() {
           points: buildRanking(pointsData, "points"),
           beers: buildRanking(beersData, "beers"),
         })
+        setSeasonStats(statsData)
         setLoading(false)
       })
       .catch(() => setLoading(false))
@@ -204,6 +388,8 @@ export default function Leaderboard() {
             })}
           </div>
         </div>
+
+        <SeasonStats stats={seasonStats} />
 
         {ranking.length === 0 ? (
           <EmptyState
