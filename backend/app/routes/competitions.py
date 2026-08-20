@@ -77,6 +77,55 @@ def create_participation(db: Session, competition_id: int, user_id: int) -> Comp
     return participation
 
 
+def serialize_participation(participation: CompetitionParticipant) -> dict:
+    return {
+        "competition": serialize_competition(participation.competition),
+        "is_participant": True,
+        "joined_at": participation.joined_at,
+    }
+
+
+@router.get("/my-competitions")
+def get_my_competitions(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    participations = (
+        db.query(CompetitionParticipant)
+        .join(Competition)
+        .filter(CompetitionParticipant.user_id == current_user.id)
+        .order_by(Competition.is_active.desc(), Competition.created_at.desc(), Competition.id.desc())
+        .all()
+    )
+
+    return [serialize_participation(participation) for participation in participations]
+
+
+@router.post("/competitions/join")
+def join_competition_by_code(
+    payload: CompetitionJoin,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    join_code = normalize_join_code(payload.join_code)
+    competition = db.query(Competition).filter(Competition.join_code == join_code).first()
+
+    if not competition:
+        raise HTTPException(status_code=400, detail="Nieprawidlowy kod ligi")
+
+    existing = get_participation(db, competition.id, current_user.id)
+
+    if existing:
+        return serialize_participation(existing)
+
+    participation = create_participation(db, competition.id, current_user.id)
+
+    if not participation:
+        raise HTTPException(status_code=409, detail="Nie udało się dołączyć do ligi")
+
+    return serialize_participation(participation)
+
+
 @router.get("/competition-participation/active")
 def get_active_competition_participation(
     db: Session = Depends(get_db),

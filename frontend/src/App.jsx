@@ -9,33 +9,36 @@ import Leaderboard from "./pages/Leaderboard"
 import Champion from "./pages/Champion"
 import Admin from "./pages/Admin"
 import Profile from "./pages/Profile"
+import MyLeagues from "./pages/MyLeagues"
 import { isAdminToken } from "./admin"
 import { apiRequest } from "./api"
-import { useActiveTournament } from "./hooks/useActiveTournament"
+import { useMyLeagues } from "./hooks/useMyLeagues"
 
 import Navbar from "./components/Navbar"
 import PageLoader from "./components/PageLoader"
 
 export default function App() {
-
   const [token, setToken] = useState(localStorage.getItem("token"))
   const [pendingPredictionsCount, setPendingPredictionsCount] = useState(0)
   const isAdmin = isAdminToken(token)
   const {
-    activeParticipation,
-    currentTournament,
-    loading: tournamentLoading,
-    refreshActiveTournament,
-    resetActiveTournament,
-    setActiveParticipation,
-  } = useActiveTournament(token)
+    participations,
+    selectedCompetition,
+    selectedCompetitionId,
+    loading: leaguesLoading,
+    refreshLeagues,
+    joinLeague,
+    setSelectedCompetitionId,
+    resetLeagues,
+  } = useMyLeagues(token)
+  const competitionQuery = selectedCompetitionId ? `?competition_id=${selectedCompetitionId}` : ""
 
   const handleLogout = useCallback(() => {
-    localStorage.removeItem("token")
     setPendingPredictionsCount(0)
-    resetActiveTournament()
+    resetLeagues()
+    localStorage.removeItem("token")
     setToken(null)
-  }, [resetActiveTournament])
+  }, [resetLeagues])
 
   const refreshPendingPredictionsCount = useCallback(async () => {
     if (!token) {
@@ -43,15 +46,15 @@ export default function App() {
       return
     }
 
-    if (!isAdmin && (tournamentLoading || activeParticipation?.is_participant === false)) {
+    if (!isAdmin && (leaguesLoading || !selectedCompetitionId)) {
       setPendingPredictionsCount(0)
       return
     }
 
     try {
       const [matchesData, predictionsData] = await Promise.all([
-        apiRequest("/matches"),
-        apiRequest("/my-predictions"),
+        apiRequest(`/matches${competitionQuery}`),
+        apiRequest(`/my-predictions${competitionQuery}`),
       ])
 
       if (!Array.isArray(matchesData) || !Array.isArray(predictionsData)) {
@@ -73,7 +76,7 @@ export default function App() {
     } catch {
       setPendingPredictionsCount(0)
     }
-  }, [activeParticipation?.is_participant, isAdmin, token, tournamentLoading])
+  }, [competitionQuery, isAdmin, leaguesLoading, selectedCompetitionId, token])
 
   const handlePredictionsChange = useCallback((pendingDelta = 0) => {
     if (pendingDelta !== 0) {
@@ -83,21 +86,20 @@ export default function App() {
     refreshPendingPredictionsCount()
   }, [refreshPendingPredictionsCount])
 
-  // 🔐 synchronizacja tokena z localStorage
   useEffect(() => {
-
     const handleStorageChange = () => {
       const storedToken = localStorage.getItem("token")
+
       if (!storedToken) {
         setPendingPredictionsCount(0)
       }
+
       setToken(storedToken)
     }
 
     window.addEventListener("storage", handleStorageChange)
 
     return () => window.removeEventListener("storage", handleStorageChange)
-
   }, [])
 
   useEffect(() => {
@@ -108,111 +110,112 @@ export default function App() {
     return () => window.clearTimeout(timeoutId)
   }, [refreshPendingPredictionsCount])
 
-  const requiresLeagueCode = Boolean(
-    token
-    && !isAdmin
-    && activeParticipation?.competition
-    && activeParticipation.is_participant === false
-  )
+  const requiresLeagueSelection = Boolean(token && !isAdmin && !selectedCompetitionId)
 
   const renderProtectedRoute = (element) => {
     if (!token) return <Navigate to="/login" />
 
-    if (!isAdmin && tournamentLoading) {
-      return <PageLoader title="Liga" subtitle="Sprawdzam dostÄ™p do turnieju" cards={2} />
+    if (!isAdmin && leaguesLoading) {
+      return <PageLoader title="Liga" subtitle="Sprawdzam dostęp do ligi" cards={2} />
     }
 
-    if (requiresLeagueCode) {
-      return <Navigate to="/dashboard" />
+    if (requiresLeagueSelection) {
+      return <Navigate to="/my-leagues" />
     }
 
     return element
   }
 
-  const handleCompetitionJoined = (participationData) => {
-    setActiveParticipation(participationData)
-    refreshPendingPredictionsCount()
-  }
-
   return (
     <div className="app-shell text-white">
-
       <Navbar
         token={token}
         onLogout={handleLogout}
         pendingPredictionsCount={pendingPredictionsCount}
-        currentTournament={currentTournament}
+        currentTournament={selectedCompetition}
       />
 
       <main className={token ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0" : ""}>
         <Routes>
+          <Route
+            path="/login"
+            element={
+              token
+                ? <Navigate to="/dashboard" />
+                : <Login onLogin={(newToken) => setToken(newToken)} />
+            }
+          />
 
-        {/* PUBLIC */}
-        <Route
-          path="/login"
-          element={
-            token
-              ? <Navigate to="/dashboard" />
-              : <Login onLogin={(newToken) => setToken(newToken)} />
-          }
-        />
+          <Route
+            path="/register"
+            element={token ? <Navigate to="/dashboard" /> : <Register />}
+          />
 
-        <Route
-          path="/register"
-          element={token ? <Navigate to="/dashboard" /> : <Register />}
-        />
+          <Route
+            path="/dashboard"
+            element={renderProtectedRoute(<Dashboard selectedCompetitionId={selectedCompetitionId} />)}
+          />
 
-        {/* PROTECTED */}
-        <Route
-          path="/dashboard"
-          element={
-            token
-              ? (
-                  <Dashboard
-                    activeParticipation={activeParticipation}
-                    isAdmin={isAdmin}
-                    participationLoading={tournamentLoading}
-                    onCompetitionJoined={handleCompetitionJoined}
+          <Route
+            path="/my-leagues"
+            element={
+              token
+                ? (
+                  <MyLeagues
+                    participations={participations}
+                    selectedCompetitionId={selectedCompetitionId}
+                    loading={leaguesLoading}
+                    onSelectCompetition={(competitionId) => {
+                      setSelectedCompetitionId(competitionId)
+                      refreshPendingPredictionsCount()
+                    }}
+                    onJoinLeague={async (joinCode) => {
+                      const data = await joinLeague(joinCode)
+                      refreshPendingPredictionsCount()
+                      return data
+                    }}
                   />
                 )
-              : <Navigate to="/login" />
-          }
-        />
+                : <Navigate to="/login" />
+            }
+          />
 
-        <Route
-          path="/matches"
-          element={renderProtectedRoute(<Matches onPredictionsChange={handlePredictionsChange} />)}
-        />
+          <Route
+            path="/matches"
+            element={renderProtectedRoute(
+              <Matches
+                selectedCompetitionId={selectedCompetitionId}
+                onPredictionsChange={handlePredictionsChange}
+              />
+            )}
+          />
 
-        <Route
-          path="/leaderboard"
-          element={renderProtectedRoute(<Leaderboard />)}
-        />
+          <Route
+            path="/leaderboard"
+            element={renderProtectedRoute(<Leaderboard selectedCompetitionId={selectedCompetitionId} />)}
+          />
 
-        <Route
-          path="/champion"
-          element={renderProtectedRoute(<Champion />)}
-        />
+          <Route
+            path="/champion"
+            element={renderProtectedRoute(<Champion />)}
+          />
 
-        <Route
-          path="/profile"
-          element={renderProtectedRoute(<Profile onProfileUpdate={(newToken) => setToken(newToken)} />)}
-        />
+          <Route
+            path="/profile"
+            element={renderProtectedRoute(<Profile onProfileUpdate={(newToken) => setToken(newToken)} />)}
+          />
 
-        <Route
-          path="/admin"
-          element={token && isAdmin ? <Admin onTournamentChange={refreshActiveTournament} /> : <Navigate to={token ? "/dashboard" : "/login"} />}
-        />
+          <Route
+            path="/admin"
+            element={token && isAdmin ? <Admin onTournamentChange={refreshLeagues} /> : <Navigate to={token ? "/dashboard" : "/login"} />}
+          />
 
-        {/* DEFAULT */}
-        <Route
-          path="*"
-          element={<Navigate to={token ? "/dashboard" : "/login"} />}
-        />
-
+          <Route
+            path="*"
+            element={<Navigate to={token ? "/dashboard" : "/login"} />}
+          />
         </Routes>
       </main>
-
     </div>
   )
 }

@@ -35,6 +35,7 @@ function ArrowIcon() {
 }
 
 export default function Dashboard({
+  selectedCompetitionId = null,
   activeParticipation = null,
   isAdmin = false,
   participationLoading = false,
@@ -46,12 +47,16 @@ export default function Dashboard({
   const [joining, setJoining] = useState(false)
   const [failed, setFailed] = useState(false)
   const username = getUsername()
+  const competitionQuery = selectedCompetitionId ? `?competition_id=${selectedCompetitionId}` : ""
 
   useEffect(() => {
+    setLoading(true)
+    setFailed(false)
+
     Promise.all([
-      apiRequest("/matches"),
-      apiRequest("/my-predictions"),
-      apiRequest("/leaderboard"),
+      apiRequest(`/matches${competitionQuery}`),
+      apiRequest(`/my-predictions${competitionQuery}`),
+      apiRequest(`/leaderboard${competitionQuery}`),
     ])
       .then(([matches, predictions, ranking]) => {
         setData({
@@ -62,7 +67,7 @@ export default function Dashboard({
       })
       .catch(() => setFailed(true))
       .finally(() => setLoading(false))
-  }, [])
+  }, [competitionQuery])
 
   const summary = useMemo(() => {
     const now = new Date()

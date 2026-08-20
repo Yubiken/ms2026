@@ -106,6 +106,7 @@ export default function Navbar({
 
   const mobileNavItems = [
     { to: "/dashboard", label: "Start", icon: "dashboard" },
+    { to: "/my-leagues", label: "Ligi", desktopLabel: "Moje ligi", icon: "leagues" },
     {
       to: "/matches",
       label: "Mecze",
@@ -150,7 +151,7 @@ export default function Navbar({
                     to={item.to}
                     className={({ isActive }) => `nav-link ${isActive ? "nav-link-active" : ""}`}
                   >
-                    {item.label === "Start" ? "Pulpit" : item.label}
+                    {item.desktopLabel || (item.label === "Start" ? "Pulpit" : item.label)}
                     {item.badge && (
                       <span className="absolute -right-4 -top-0 flex h-5 min-w-5 items-center justify-center rounded-full bg-green-400 px-1 text-[10px] font-black text-black">
                         {item.badge}
@@ -214,7 +215,7 @@ export default function Navbar({
 
       {token && (
         <nav className="glass-card fixed inset-x-3 bottom-3 z-40 rounded-3xl px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-white md:hidden">
-          <div className={`grid gap-1 ${isAdmin ? "grid-cols-4" : "grid-cols-3"}`}>
+          <div className={`grid gap-1 ${isAdmin ? "grid-cols-5" : "grid-cols-4"}`}>
             {mobileNavItems.map(item => (
               <NavLink
                 key={item.to}

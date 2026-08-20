@@ -200,7 +200,7 @@ function SeasonStats({ stats }) {
   )
 }
 
-export default function Leaderboard() {
+export default function Leaderboard({ selectedCompetitionId = null }) {
 
   const [ranking, setRanking] = useState([])
   const [loading, setLoading] = useState(true)
@@ -209,11 +209,14 @@ export default function Leaderboard() {
   const [historyError, setHistoryError] = useState("")
   const [seasonStats, setSeasonStats] = useState(null)
   const currentUser = getUsername()
+  const competitionQuery = selectedCompetitionId ? `?competition_id=${selectedCompetitionId}` : ""
 
   useEffect(() => {
+    setLoading(true)
+
     Promise.all([
-      apiRequest("/leaderboard"),
-      apiRequest("/season-stats"),
+      apiRequest(`/leaderboard${competitionQuery}`),
+      apiRequest(`/season-stats${competitionQuery}`),
     ])
       .then(([pointsData, statsData]) => {
         const buildRanking = (data) => {
@@ -242,7 +245,7 @@ export default function Leaderboard() {
         setLoading(false)
       })
       .catch(() => setLoading(false))
-  }, [])
+  }, [competitionQuery])
 
   if (loading) {
     return <PageLoader title="Ranking Ligi" subtitle="Przeliczam tabelę" cards={5} />
@@ -298,7 +301,7 @@ export default function Leaderboard() {
     })
 
     try {
-      const data = await apiRequest(`/leaderboard/${user.user_id}/history`)
+      const data = await apiRequest(`/leaderboard/${user.user_id}/history${competitionQuery}`)
 
       if (!data || !Array.isArray(data.predictions)) {
         setHistoryModal({

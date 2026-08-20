@@ -123,15 +123,15 @@ export default function Login({ onLogin }) {
             {APP_NAME}
           </div>
           <h1 className="mt-6 max-w-xl text-6xl font-black leading-[0.95]">
-            Typuj mecze.
-            <span className="section-title block">Walcz o ranking.</span>
+            Liga dla znajomych.
+            <span className="section-title block">Typuj po swojemu.</span>
           </h1>
           <p className="mt-6 max-w-lg text-lg font-semibold leading-8 text-gray-300">
-            Dołącz do aktywnego turnieju kodem ligi, obstawiaj wyniki i śledź swoje miejsce po każdym meczu.
+            Dołącz kodem do swojej ligi, obstawiaj wyniki meczów i sprawdzaj ranking po każdej kolejce.
           </p>
 
           <div className="mt-8 grid max-w-lg grid-cols-3 gap-3">
-            {["Kod ligi", "Ranking", "Typy live"].map(item => (
+            {["Moje ligi", "Terminarz", "Ranking"].map(item => (
               <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-bold text-gray-200">
                 {item}
               </div>
@@ -151,12 +151,12 @@ export default function Login({ onLogin }) {
               {APP_NAME}
             </div>
             <h2 className="mt-3 text-3xl font-black">
-              {showPasswordReset ? "Zmień hasło" : "Witaj z powrotem"}
+              {showPasswordReset ? "Zmień hasło" : "Zaloguj się"}
             </h2>
             <p className="mt-2 text-sm font-semibold text-gray-400">
               {showPasswordReset
                 ? "Podaj dane konta i ustaw nowe hasło."
-                : "Zaloguj się, a potem dołącz do ligi kodem turnieju."}
+                : "Po zalogowaniu wybierzesz ligę albo dołączysz do nowej kodem."}
             </p>
           </div>
 

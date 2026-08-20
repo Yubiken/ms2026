@@ -190,7 +190,7 @@ function StageSummaryPanel({
   )
 }
 
-export default function Matches({ onPredictionsChange }) {
+export default function Matches({ selectedCompetitionId = null, onPredictionsChange }) {
 
   const [matches, setMatches] = useState([])
   const [myPredictions, setMyPredictions] = useState([])
@@ -213,12 +213,15 @@ export default function Matches({ onPredictionsChange }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const editMatchId = searchParams.get("edit")
   const currentUsername = getUsername()
+  const competitionQuery = selectedCompetitionId ? `?competition_id=${selectedCompetitionId}` : ""
 
   const fetchData = useCallback(async () => {
+    setLoading(true)
+
     try {
       const [matchesData, predictionsData] = await Promise.all([
-        apiRequest("/matches"),
-        apiRequest("/my-predictions")
+        apiRequest(`/matches${competitionQuery}`),
+        apiRequest(`/my-predictions${competitionQuery}`)
       ])
 
       if (!matchesData || !predictionsData) return
@@ -231,7 +234,7 @@ export default function Matches({ onPredictionsChange }) {
     }
 
     setLoading(false)
-  }, [])
+  }, [competitionQuery])
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {

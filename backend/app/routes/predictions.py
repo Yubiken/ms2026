@@ -197,10 +197,11 @@ def update_prediction(
 
 @router.get("/my-predictions")
 def get_my_predictions(
+    competition_id: int | None = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    active_competition_id = get_active_competition_id(db)
+    selected_competition_id = competition_id or get_active_competition_id(db)
 
     query = (
         db.query(Prediction)
@@ -208,8 +209,8 @@ def get_my_predictions(
         .filter(Prediction.user_id == current_user.id)
     )
 
-    if active_competition_id is not None:
-        query = query.filter(Match.competition_id == active_competition_id)
+    if selected_competition_id is not None:
+        query = query.filter(Match.competition_id == selected_competition_id)
 
     predictions = query.all()
 
@@ -261,11 +262,14 @@ def finish_match(
 # ==============================
 
 @router.get("/leaderboard")
-def leaderboard(db: Session = Depends(get_db)):
-    active_competition_id = get_active_competition_id(db)
+def leaderboard(
+    competition_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    selected_competition_id = competition_id or get_active_competition_id(db)
     competition_filter = (
-        Match.competition_id == active_competition_id
-        if active_competition_id is not None
+        Match.competition_id == selected_competition_id
+        if selected_competition_id is not None
         else true()
     )
     total_points = func.coalesce(
@@ -309,8 +313,8 @@ def leaderboard(db: Session = Depends(get_db)):
         .outerjoin(Match, Match.id == Prediction.match_id)
     )
 
-    if active_competition_id is not None:
-        query = query.filter(CompetitionParticipant.competition_id == active_competition_id)
+    if selected_competition_id is not None:
+        query = query.filter(CompetitionParticipant.competition_id == selected_competition_id)
 
     results = (
         query
@@ -336,22 +340,26 @@ def leaderboard(db: Session = Depends(get_db)):
 
 
 @router.get("/leaderboard/{user_id}/history")
-def leaderboard_user_history(user_id: int, db: Session = Depends(get_db)):
+def leaderboard_user_history(
+    user_id: int,
+    competition_id: int | None = None,
+    db: Session = Depends(get_db),
+):
     user = db.query(User).filter(User.id == user_id).first()
 
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     now = datetime.now(timezone.utc)
-    active_competition_id = get_active_competition_id(db)
+    selected_competition_id = competition_id or get_active_competition_id(db)
     query = (
         db.query(Prediction)
         .join(Match)
         .filter(Prediction.user_id == user_id)
     )
 
-    if active_competition_id is not None:
-        query = query.filter(Match.competition_id == active_competition_id)
+    if selected_competition_id is not None:
+        query = query.filter(Match.competition_id == selected_competition_id)
 
     predictions = query.order_by(Match.start_time.desc()).all()
     visible_predictions = [
@@ -387,8 +395,11 @@ def leaderboard_user_history(user_id: int, db: Session = Depends(get_db)):
 # ==============================
 
 @router.get("/season-stats")
-def season_stats(db: Session = Depends(get_db)):
-    active_competition_id = get_active_competition_id(db)
+def season_stats(
+    competition_id: int | None = None,
+    db: Session = Depends(get_db),
+):
+    selected_competition_id = competition_id or get_active_competition_id(db)
     finished_matches_query = db.query(Match).filter(Match.is_finished.is_(True))
     predictions_query = (
         db.query(Prediction)
@@ -397,9 +408,9 @@ def season_stats(db: Session = Depends(get_db)):
         .filter(Match.is_finished.is_(True))
     )
 
-    if active_competition_id is not None:
-        finished_matches_query = finished_matches_query.filter(Match.competition_id == active_competition_id)
-        predictions_query = predictions_query.filter(Match.competition_id == active_competition_id)
+    if selected_competition_id is not None:
+        finished_matches_query = finished_matches_query.filter(Match.competition_id == selected_competition_id)
+        predictions_query = predictions_query.filter(Match.competition_id == selected_competition_id)
 
     finished_matches_count = finished_matches_query.count()
     predictions = predictions_query.all()
