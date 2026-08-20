@@ -130,13 +130,6 @@ export default function Login({ onLogin }) {
             Dołącz kodem do swojej ligi, obstawiaj wyniki meczów i sprawdzaj ranking po każdej kolejce.
           </p>
 
-          <div className="mt-8 grid max-w-lg grid-cols-3 gap-3">
-            {["Moje ligi", "Terminarz", "Ranking"].map(item => (
-              <div key={item} className="rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm font-bold text-gray-200">
-                {item}
-              </div>
-            ))}
-          </div>
         </section>
 
         <form
